@@ -1,0 +1,134 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+#### Descriptive Statistics in R with Tidyverse
+
+It is a good practice to start your document with the necessary packages.
+
+```{r}
+# install.packages("tidyverse")
+# install.packages("esquisse")
+# install.packages("skimr")
+# install.packages("gtsummary")
+library(tidyverse)
+library(esquisse)
+library(skimr)
+library(gtsummary)
+```
+
+#### Loading Our Data
+
+Loading the diamonds dataset from the ggplot2 package (as we have done before).
+
+```{r}
+diamonds = ggplot2::diamonds # How do we know that we successfully loaded this dataset?
+```
+
+"str" and "summary" as usual
+
+```{r}
+str(diamonds)
+summary(diamonds)
+```
+
+#### Calculating Descriptive Statistics with Tidyverse
+
+Let's start by calculating the mean of a variable. To do this we use the summarize (or summarise) function. We pass our data to the function, give the summary statistic a name, and then use the appropriate statistical function on our variable of interest. You can read more about the functions available in summarise here: <https://dplyr.tidyverse.org/reference/summarise.html>
+
+```{r}
+diamonds %>% summarise(avg_price = mean(price))
+```
+
+The median:
+
+```{r}
+diamonds %>% summarise(median_price = median(price))
+```
+
+How about standard deviation?
+
+```{r}
+diamonds %>% summarise(sd_price = sd(price))
+```
+
+How about more than one stat at a time?
+
+```{r}
+diamonds %>% summarise(avg_price = mean(price), max_price = max(price), n = n())
+```
+
+For statistics by group, we can use the group_by function. Put the group_by first to create the groupings then apply the summarise.
+
+```{r}
+diamonds %>% group_by(cut) %>% summarise(avg_price = mean(price))
+```
+
+```{r}
+diamonds %>% group_by(cut) %>% summarise(avg_price = mean(price), sd_price = sd(price))
+```
+
+BIG WARNING! R won't know what to do if you have missing values in your data when calculating descriptive stats. Its default behavior will be to return an "NA" as the result. To avoid this add: na.rm = TRUE to your function (inside the function for the statistic). For example (not needed here, but as a demonstration):
+
+```{r}
+diamonds %>% summarise(avg_price = mean(price, na.rm = TRUE))
+```
+
+**Other Ways to Generate Statistical Summaries**
+
+Using the "skimr" package:
+
+```{r}
+skim(diamonds)
+```
+
+Using the "scales" package to calculate proportions (Note: We don't need to install the "scales" package on its own since it is installed along with "tidyverse"):
+
+```{r}
+diamonds %>%                  # begin with the diamonds dataframe
+  group_by(cut) %>%                         # group by cut
+  summarise(n = n()) %>%                            # count by cut
+  mutate(percent = scales::percent(n / sum(n)))
+```
+
+Using the "gtsummary" package:
+
+```{r}
+diamonds %>% 
+  select(price, carat, cut) %>%  # keep only the columns of interest
+  tbl_summary()   
+```
+
+```{r}
+diamonds %>% 
+  select(price) %>%         # keep only columns of interest 
+  tbl_summary(                  # create summary table
+    statistic = price ~ "{mean}") # print mean of price
+```
+
+Add some complexity:
+
+```{r}
+diamonds %>% 
+  select(price, carat, cut) %>% # keep only columns of interest
+  tbl_summary(     
+    statistic = list(all_continuous() ~ "{mean} ({sd})",        # stats and format for continuous columns
+                     all_categorical() ~ "{n} / {N} ({p}%)"),   # stats and format for categorical columns
+    digits = all_continuous() ~ 1,                              # rounding for continuous columns
+    #type   = all_categorical() ~ "categorical"                 # force all categorical levels to display
+  )
+```
+
+For more details on constructing tables of descriptive stats, check out the "Descriptive tables" chapter from the excellent (and free) "The Epidemiologist R Handbook" here: [Link](https://epirhandbook.com/en/descriptive-tables.html "https://epirhandbook.com/en/descriptive-tables.html").
+
+We're done with this lecture. Let's render our work. Before we do this we need to check:
+
+-   There are no errors in the code. When we render all of the code is run. If there are any errors, the render will fail.
+
+-   We have commented out any install.packages commands. This command cannot be executed during a render.
+
+If we are happy that those things are good, then we can render this lecture to an HTML file.
+
+Start by making sure any changes are saved. Then click "Render" (top of this window with a blue arrow).
