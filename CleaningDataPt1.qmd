@@ -1,0 +1,183 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+#### Data Cleaning and Preparation
+
+It is a good practice to start your document with the necessary packages.
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(naniar) #visualizing missingness
+library(mice) #imputation
+```
+
+#### Loading Our Data
+
+Let's load data from a CSV file. The file needs to be in our project's Files pane (at right). Here we see a file called "penguins.csv". We can then use the "read_csv" function to read-in this CSV file into a data frame:
+
+```{r}
+penguins = read_csv("penguins.csv")
+```
+
+#### Data Cleaning Tasks
+
+Two of our key data cleaning tasks are:
+
+1.  Ensuring that variables are in the correct type
+
+2.  Dealing with missing data
+
+Let's start by looking at variable types. Here's how the "tidyverse" package attempts to guess variable types when we read-in data (Note: "read_csv" is a "tidyverse" function).
+
+-   If a variable contains only F, T, FALSE, or TRUE, it will be typed as logical
+
+-   If it contains only numbers, it will be typed as numeric (or integer)
+
+-   If in a correct date (or date and time) format, it will be typed as a date or as date-time
+
+-   Otherwise, the variable is considered to be a string and is typed as a character
+
+Look at the structure of our dataset to see how the variables in this dataset were typed when the dataset was read-in:
+
+```{r}
+str(penguins)
+```
+
+The first variable "...1" is a variable that contains the row number of each observation in the dataset. We could delete this if we wish. The "species", "island", and "sex" variables are text so they are read-in as character variables. The other variables are numeric.
+
+The numeric variables are in the correct type, but we should consider converting the character variables. Here's the key element of this: Is the variable categorical? If yes, it needs to be converted from a character to a **factor**. NOTE: Some variable that appear to be numeric are really categorical and should also be converted to factors. For example, if we had a variable representing high school grade (e.g., 9, 10, 11, and 12), it might make sense to convert these to factors as they could reasonably thought of as categorical.
+
+Performing factor conversion with mutate and as_factor (do NOT use as.factor):
+
+```{r}
+penguins = penguins %>% mutate(species = as_factor(species)) %>%
+  mutate(island = as_factor(island))%>%
+  mutate(sex = as_factor(sex))
+```
+
+Check the structure to make sure that the conversion was done correctly:
+
+```{r}
+str(penguins)
+```
+
+With the variable types set correctly we can now develop visualizations and perform additional analysis.
+
+```{r}
+ggplot(penguins,aes(x=species,y=bill_length_mm)) + geom_boxplot() + theme_bw()
+```
+
+Notice the warning at the top of the plot. This brings us to our next data cleaning issue: missing data.
+
+------------------------------------------------------------------------
+
+What is **missing data**?
+
+-   Values in a dataset that are not available
+
+-   Missingness can be:
+
+    -   Legitimate --\> Color of Car --\> You Do Not Have a Car
+
+    -   Illegitimate --\> Survey Question Skipped by Respondent
+
+    -   Missingness May Have Attributable Cause or May Be Random
+
+    -   Is "Unknown" the same thing as "Missing"?
+
+What are the implications of missing data?
+
+How does R display missing data? Let's take a look at the summary.
+
+```{r}
+summary(penguins)
+```
+
+BEWARE: Missingness is NOT always consistently encoded in datasets!!
+
+BEWARE (Part 2): You should make sure your variables are in the correct types BEFORE assessing missingness.
+
+We can also see missing data using the "skimr" package.
+
+```{r}
+skim(penguins)
+```
+
+How many variables display some missingness?
+
+Here we are dealing with data that is **explicitly** missing. This means that we can see the missingness represented directly in the data.
+
+What are our options for dealing with explicitly missing data? We have three:
+
+1\) Row-wise deletion --\> Delete any row that has any missingness in any column
+
+2\) Column-wise deletion --\> Delete any column that has any missingness in any row
+
+3\) Imputation
+
+Let's look at how we would do row-wise deletion. What does this next chunk of code do?
+
+```{r}
+penguins_dropped_rows = penguins %>% drop_na()   
+```
+
+How about column-wise deletion? What does this next chunk of code do?
+
+```{r}
+penguins_dropped_cols = penguins %>% select(-sex, -bill_length_mm, -bill_depth_mm, 
+                                            -flipper_length_mm, -body_mass_g)
+```
+
+Next up is imputation. Imputation is essentially making an "educated guess" as to the missing values. Before we impute, let's visualize our missingness (this plot works well when you have not too many variables). How do we interpret this chart?
+
+```{r}
+gg_miss_upset(penguins)
+```
+
+When we impute we have several options (let's assume that we are talking about numeric variables for now):
+
+-   Replace the missing values with a constant (often zero)
+
+-   Replace the missing values with the mean of the non-missing values
+
+-   Replace the missing values with the median of the non-missing values
+
+We'll use a package called "mice" to help us with the imputation. This package uses patterns in the data to estimate what the missing values "should" be.
+
+Let's demonstrate this by imputing one of the numeric variables with missing values. I'll pick "bill_length_mm". We'll try a few different imputation methods using mice.
+
+```{r}
+mice_imputed = data.frame(  #creates a data frame with the original and imputed values
+  original = penguins$bill_length_mm,
+  imputed_pmm = complete(mice(penguins, method = "pmm"))$bill_length_mm,
+  imputed_cart = complete(mice(penguins, method = "cart"))$bill_length_mm
+)
+mice_imputed
+```
+
+We then choose the imputation that gives us the most reasonable distribution.
+
+NOTE: In this case we are only imputing TWO values so it will be very difficult to tell anything!
+
+```{r}
+ggplot(mice_imputed,aes(x=original)) + geom_histogram()
+ggplot(mice_imputed,aes(x=imputed_pmm)) + geom_histogram()
+ggplot(mice_imputed,aes(x=imputed_cart)) + geom_histogram()
+```
+
+------------------------------------------------------------------------
+
+We're done with this lecture. Let's render our work. Before we do this we need to check:
+
+-   There are no errors in the code. When we render all of the code is run. If there are any errors, the render will fail.
+
+-   We have commented out any install.packages commands. This command cannot be executed during a render.
+
+If we are happy that those things are good, then we can render this lecture to an HTML file.
+
+Start by making sure any changes are saved. Then click "Render" (top of this window with a blue arrow).
