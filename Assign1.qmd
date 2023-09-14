@@ -1,0 +1,152 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Assignment 1: R Basics
+
+I have already installed the libraries that you will need for this assignment. Please run the chunk below to load the libraries.
+
+```{r}
+library(tidyverse)
+library(esquisse)
+library(dplyr)
+```
+
+Load the dataset using the code below. We are using a dataset from the ggplot2 package called "mpg". This dataset is described here: <https://ggplot2.tidyverse.org/reference/mpg.html>
+
+```{r}
+mpg = ggplot2::mpg
+```
+
+Let's start the assignment. You can write your non-code answers in plain text (outside of R code chunks). Please create any R code chunks that you may need for your code. Use the green button at top right (see screenshot below) to create new chunks.
+
+![Screenshot of R Code Chunk Button](screen.png){width="389"}
+
+You may use the esquisse package for your data visualizations (if you wish).
+
+**Task 1:** How many rows and columns are there in the dataset?
+
+*Columns: 11*
+
+*Rows: 234*
+
+**Task 2:** Filter out cars with an engine size (displ) greater than 5 liters. Do not modify the "mpg" dataset when you perform your filter. How many cars are left?
+
+```{r}
+cars_EngineMoreThan5L = mpg %>% filter (displ > 5)
+```
+
+*36 Cars are left*
+
+**Task 3**: Using the original dataset, determine the average highway miles per gallon (hwy) for the vehicles in this dataset.
+
+```{r}
+avg_hwyMPG = mpg %>% summarise(avg_MPG = mean(hwy))
+```
+
+*The average MPG is 23.44017*
+
+**Task 4**: Create a new column in the original dataset. Call this new column "age" which is 2023 minus the "year" variable.
+
+```{r}
+mpg = mpg %>% mutate (Age = 2023-year)
+```
+
+**Task 5**: Using the original dataset, create a scatterplot with engine size (displ) on the x-axis and highway miles per gallon (hwy) on the y-axis. Comment on the relationship between these two variables.
+
+```{r}
+#esquisser()
+```
+
+```{r}
+
+library(ggplot2)
+
+ggplot(mpg) +
+ aes(x = displ, y = hwy) +
+ geom_point(shape = "circle", size = 1.5, colour = "#112446") +
+ labs(x = "Engine Size (Displ)", y = "Highway Miles Per Gallon (MPG)", title = "Task 5", subtitle = "RBasics", 
+ caption = "Skylar Thornton") +
+ theme_minimal()
+
+```
+
+*The relationship between engine size and the highway miles per gallon is pretty linear. As the engine gets bigger, the mpg goes down.*
+
+**\
+Task 6**: Using the original dataset, determine the average highway miles per gallon (hwy) for each manufacturer (manufacturer).
+
+```{r}
+
+AVG_HwyMpg_manufacturer = mpg %>% group_by(manufacturer) %>% summarise(avg_hwy = mean(hwy))
+
+```
+
+**Task 7**: Using the original dataset, what is the median highway miles per gallon (hwy) for each class of car (class)? Comment on the results.
+
+```{r}
+
+MEDIAN_HwyMpg_class = mpg %>% group_by(class) %>% summarise(avg_hwy = median(hwy))
+
+```
+
+*Based on the data that was generated from task 7, there was a higher range for cars that were smaller and sedan like (around 25 to 27). However, trucks, minivans, and SUVs were on the lowest end of mpg range (around 17 to 23).*
+
+**Task 8:** Using the original dataset, create a bar plot to visualize the number of cars in each "class" of vehicle.
+
+```{r}
+
+library(ggplot2)
+
+ggplot(mpg) +
+ aes(x = class) +
+ geom_bar(fill = "#112446") +
+ theme_minimal()
+
+```
+
+**Task 9:** Using the original dataset, create an appropriate plot to compare the city mpg (cty) between cars with automatic and manual transmission. Transmission type is recorded in the "trans" variable. Comment on the results of this plot. Note that there are several types of automatic and manual transmissions in the dataset. You do not need to combine them in any way.
+
+```{r}
+
+library(ggplot2)
+
+ggplot(mpg) +
+ aes(x = cty, y = trans) +
+ geom_violin(adjust = 1L, scale = "area", fill = "#112446") +
+ theme_minimal()
+
+
+```
+
+*Manual transmissions are on the lower range of city mpg.*
+
+*Automatic* *transmissions are only a bit better on the range of city mpg.*
+
+*Overall, the best city mpg is auto I3 and auto av transmissions.*
+
+**Task 10:** Using the original dataset, create an appropriate plot to show the distribution of highway mpg (hwy).
+
+```{r}
+
+library(ggplot2)
+
+ggplot(mpg) +
+ aes(x = hwy) +
+ geom_histogram(bins = 30L, fill = "#112446") +
+ theme_minimal()
+
+```
+
+**Task 11**: Pay close attention to what is being asked of you in this task! Ideally, you should do all of this task using a single line of code (connected with %\>%). Using the original dataset, start by selecting only the manufacturer, model, cty, hwy, displ, and class columns. Filter to SUVs (class == "suv") with an engine size (displ) of less than 4 liters and report the average city miles per gallon (cty) and average highway miles per gallon (hwy). Also, report the number of such SUVs.
+
+```{r}
+
+task11 = mpg %>% select(manufacturer, model, cty, hwy, displ, class) %>% filter(class=="suv" & displ < 4 ) %>% summarise(avg_cty = mean(cty), avg_hwy = mean(hwy), count = "suv")
+```
+
+------------------------------------------------------------------------
+
+**DELIVERABLE:** Your deliverable is an HTML document of your work. Render this Quarto file into an HTML document and upload in the appropriate location on Canvas.
