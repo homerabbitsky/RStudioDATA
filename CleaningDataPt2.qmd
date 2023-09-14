@@ -1,0 +1,164 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+#### Data Cleaning and Preparation
+
+It is a good practice to start your document with the necessary packages.
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+```
+
+#### Loading Our Data
+
+Last time we looked at loading data from CSV files. This time we'll load data from a set of Excel files (they are already uploaded in the Files pane to the right). The data is from New York City's Department of Finance (here: <https://www.nyc.gov/site/finance/taxes/property-rolling-sales-data.page>). If we were to open one of these files in Excel, we would see how the data exists in the spreadsheet (see screenshot below):
+
+![Top of Dataset in Excel](2023-09-12%2022_15_26-rollingsales_bronx.png)
+
+By default, when we read in data from a spreadsheet, the read-in process will start at Row 1 of the spreadsheet. We don't want that to happen here. We need the read-in to skip the first four rows and begin in Row 5 (where the variable names are). Fortunately, this is easy to do with the "read_excel" function.
+
+```{r}
+# the skip = 4 skips the first 4 rows before starting to read-in the data
+brooklyn = read_excel("rollingsales_brooklyn.xlsx", skip = 4)
+```
+
+Let's take a quick look at the data before proceeding:
+
+```{r}
+str(brooklyn)
+summary(brooklyn)
+```
+
+Read-in other four datasets:
+
+```{r}
+bronx = read_excel("rollingsales_bronx.xlsx", skip = 4)
+manhattan = read_excel("rollingsales_manhattan.xlsx", skip = 4)
+queens = read_excel("rollingsales_queens.xlsx", skip = 4)
+statenisland = read_excel("rollingsales_statenisland.xlsx", skip = 4)
+```
+
+If we examine the five datasets, we would see that all of the datasets are structured the same way (same variables in the same positions in the data). Let's combine the datasets into a single dataset by stacking them:
+
+```{r}
+NYC_sales <- bind_rows(brooklyn, bronx, manhattan, statenisland, queens)
+```
+
+Now we can perform our typical data cleaning tasks.
+
+#### Data Cleaning Tasks
+
+The variable names in this dataset are pretty horrible (all caps, spaces in names, etc.). Let's fix that first:
+
+See names before repairing:
+
+```{r}
+names(NYC_sales)
+```
+
+```{r}
+#using clean_names from the janitor package
+
+NYC_sales = NYC_sales %>% clean_names()
+```
+
+```{r}
+names(NYC_sales)
+```
+
+Next, let's look at variable types.
+
+```{r}
+str(NYC_sales)
+```
+
+Let's go through these variables and determine which should be:
+
+-   Discarded
+
+-   Converted to factors (categorical)
+
+The x22, x23, and x24 variables appear to be empty. We can double-check.
+
+```{r}
+NYC_sales %>% tabyl(x22) #note the use of tabyl here
+# R's default "table" command doesn't play nice with pipes
+# tabyl does!
+
+NYC_sales %>% tabyl(x23)
+NYC_sales %>% tabyl(x24)
+```
+
+```{r}
+NYC_sales = NYC_sales %>% select(-x22,-x23,-x24)
+```
+
+Now let's focus on variable types.
+
+```{r}
+str(NYC_sales)
+```
+
+I would argue that all of the character variables except for "address" should be converted to factors as they are categorical. We have a couple of options here. We can use mutate with as_factor for each variable one at a time. This is doable, but a bit painful. A more complex, but more efficient way is given in the code below:
+
+```{r}
+NYC_sales = NYC_sales %>% mutate(across(c(where(is.character), -address), as_factor))
+```
+
+```{r}
+str(NYC_sales)
+```
+
+Let's recode the borough names from numbers (1 through 5) to their proper names. We can do this several ways.
+
+```{r}
+NYC_sales = NYC_sales %>% 
+  mutate(borough = case_when(
+    borough == 1 ~ "Manhattan",
+    borough == 2 ~ "Bronx",
+    borough == 3 ~ "Brooklyn",
+    borough == 4 ~ "Queens",
+    borough == 5 ~ "Staten Island"
+))
+```
+
+On to missing data...
+
+------------------------------------------------------------------------
+
+```{r}
+skim(NYC_sales)
+```
+
+How many variables display some missingness?
+
+What are our options for dealing with explicitly missing data? Recall that we have three:
+
+1\) Row-wise deletion --\> Delete any row that has any missingness in any column
+
+2\) Column-wise deletion --\> Delete any column that has any missingness in any row
+
+3\) Imputation
+
+What would be appropriate here?
+
+------------------------------------------------------------------------
+
+We're done with this lecture. Let's render our work. Before we do this we need to check:
+
+-   There are no errors in the code. When we render all of the code is run. If there are any errors, the render will fail.
+
+-   We have commented out any install.packages commands. This command cannot be executed during a render.
+
+If we are happy that those things are good, then we can render this lecture to an HTML file.
+
+Start by making sure any changes are saved. Then click "Render" (top of this window with a blue arrow).
