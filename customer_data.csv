@@ -1,0 +1,101 @@
+Customer ID,First Name,Last Name,Email,Age,Gender,Annual Income,Purchase History,Last Purchase Amount,Membership Status,Location,Feedback Score
+1,Rosa,Anderson,rosa.anderson@example.com,51,Female,95323,33,559.0040673,Regular,,3
+2,Pedro,Ramirez,pedro.ramirez@example.com,49,Male,,18,,Regular,San Jose,5
+3,Shigeru,Lewis,shigeru.lewis@example.com,,Male,68254,11,1898.531469,Regular,San Antonio,5
+4,Kareena,Parker,kareena.parker@example.com,33,Female,96698,17,1650.140253,Premium,Chicago,1
+5,Isaac,Allen,isaac.allen@example.com,35,Male,122459,31,,Regular,Los Angeles,5
+6,Julian,Thompson,julian.thompson@example.com,,Male,65838,19,432.0905727,Premium,Dallas,2
+7,Miguel,Turner,miguel.turner@example.com,22,Male,,48,,Premium,,5
+8,Vivek,Chin,vivek.chin@example.com,,Male,139408,22,1942.475691,Regular,Los Angeles,
+9,Rafael,Zhang,rafael.zhang@example.com,,Male,93242,8,110.6512362,Regular,Dallas,2
+10,Maria,Scott,maria.scott@example.com,33,Female,91894,30,673.6832213,Premium,,
+11,Isaac,Taylor,isaac.taylor@example.com,35,Male,61946,5,1977.753599,Premium,,5
+12,Hiroshi,Williams,hiroshi.williams@example.com,39,Male,89871,10,,Premium,Dallas,5
+13,Javier,Collins,javier.collins@example.com,38,Male,102255,49,418.3590945,Premium,Dallas,3
+14,Josefina,Moore,josefina.moore@example.com,52,Female,48958,15,1661.337496,Premium,New York,5
+15,Hana,Johnson,hana.johnson@example.com,23,Female,80277,44,1112.873499,Premium,San Antonio,1
+16,Ricardo,Lopez,ricardo.lopez@example.com,26,Male,54983,47,1176.902336,Regular,San Diego,
+17,Kwame,Wu,kwame.wu@example.com,27,Male,108561,44,1627.975432,Regular,New York,1
+18,Karishma,Davis,karishma.davis@example.com,32,Female,96616,26,473.6673713,Premium,San Antonio,1
+19,Felipa,Wilson,felipa.wilson@example.com,42,Female,127818,36,1550.99347,Regular,Philadelphia,5
+20,Victor,Lee,victor.lee@example.com,62,Male,145255,24,1579.401071,Regular,Phoenix,3
+21,Angela,Nelson,angela.nelson@example.com,27,Female,,6,1196.003454,Premium,New York,2
+22,Vidya,Sanchez,vidya.sanchez@example.com,63,Female,143249,26,561.7769435,Regular,Philadelphia,5
+23,Jose,Lim,jose.lim@example.com,31,Male,39150,1,1968.215982,Regular,Los Angeles,
+24,Fatima,Nelson,fatima.nelson@example.com,22,Female,66208,17,,Regular,Philadelphia,5
+25,Priya,Allen,priya.allen@example.com,44,Female,,35,1085.028759,Regular,Houston,1
+26,Akio,Young,akio.young@example.com,44,Male,133547,8,1599.042509,Premium,,
+27,Victor,Balakrishnan,victor.balakrishnan@example.com,39,Male,141989,30,228.7534323,Premium,San Jose,
+28,Andres,Walker,andres.walker@example.com,52,Male,,24,1734.231298,Premium,Philadelphia,3
+29,Rani,Patel,rani.patel@example.com,47,Female,74548,44,,Premium,Chicago,3
+30,Pedro,Ong,pedro.ong@example.com,44,Male,,48,,Regular,New York,4
+31,Sarah,Roberts,sarah.roberts@example.com,21,Female,96550,44,1578.978754,Regular,Philadelphia,2
+32,Leila,Roberts,leila.roberts@example.com,31,Female,65018,17,,Premium,Dallas,4
+33,Diego,Ng,diego.ng@example.com,44,Male,137551,38,41.40435619,Premium,Philadelphia,3
+34,Daniel,Kim,daniel.kim@example.com,42,Male,30336,25,538.0813416,Regular,Chicago,4
+35,Patricia,Perez,patricia.perez@example.com,67,Female,67072,41,,Premium,San Diego,
+36,Rani,Patel,rani.patel@example.com,55,Female,125164,24,847.7115083,Regular,San Diego,1
+37,Esperanza,Flores,esperanza.flores@example.com,62,Female,69132,7,236.1621205,Regular,Chicago,2
+38,Noah,Patel,noah.patel@example.com,19,Male,139769,44,136.4804959,Regular,,4
+39,Frida,Carter,frida.carter@example.com,66,Female,106931,15,,Premium,Los Angeles,4
+40,Arturo,Zhao,arturo.zhao@example.com,54,Male,106011,31,730.4575579,Regular,San Diego,4
+41,Fatimah,Kim,fatimah.kim@example.com,42,Female,116499,2,1191.395376,Regular,New York,4
+42,Fatimah,Roberts,fatimah.roberts@example.com,,Female,94178,40,909.4907856,Regular,Phoenix,2
+43,Juliana,Thomas,juliana.thomas@example.com,18,Female,143411,36,450.8840153,Regular,,3
+44,Mariana,Lee,mariana.lee@example.com,40,Female,49476,21,1234.062604,Regular,New York,5
+45,Rosa,Collins,rosa.collins@example.com,,Female,88529,40,,Regular,Houston,2
+46,Felipe,Ong,felipe.ong@example.com,66,Male,100592,15,1818.415859,Premium,New York,3
+47,Dolores,Hoo,dolores.hoo@example.com,,Female,93483,42,,Regular,Philadelphia,3
+48,Raj,Chin,raj.chin@example.com,44,Male,75236,5,,Regular,,3
+49,Santiago,Goh,santiago.goh@example.com,52,Male,73573,41,1290.247962,Regular,Dallas,4
+50,Christine,Moore,christine.moore@example.com,65,Female,102340,30,71.98977263,Premium,San Antonio,2
+51,Yusuf,Flores,yusuf.flores@example.com,65,Male,,45,1997.187643,Premium,Dallas,3
+52,Zara,Balakrishnan,zara.balakrishnan@example.com,52,Female,101228,20,1696.124101,Regular,San Diego,
+53,Julian,Hernandez,julian.hernandez@example.com,69,Male,79441,42,858.2845024,Regular,Phoenix,5
+54,Samir,Martinez,samir.martinez@example.com,56,Male,89682,27,224.8440411,Regular,New York,1
+55,Miguel,Wilson,miguel.wilson@example.com,32,Male,72176,8,1427.678617,Regular,Houston,3
+56,Yuki,Rodriguez,yuki.rodriguez@example.com,49,Female,143980,9,,Premium,Phoenix,2
+57,Sophia,Wang,sophia.wang@example.com,32,Female,54727,3,1799.540863,Regular,,4
+58,Camila,Hernandez,camila.hernandez@example.com,35,Female,121422,3,651.0025213,Premium,New York,1
+59,Dylan,Mensah,dylan.mensah@example.com,45,Male,61300,20,305.1843131,Premium,,3
+60,Esteban,Lopez,esteban.lopez@example.com,49,Male,104946,32,261.1212607,Regular,Phoenix,
+61,Paula,Ng,paula.ng@example.com,19,Female,,8,1252.391814,Premium,,2
+62,Julian,Morris,julian.morris@example.com,42,Male,60613,7,1174.87573,Regular,Philadelphia,2
+63,Ethan,Wilson,ethan.wilson@example.com,39,Male,142199,16,,Regular,San Antonio,1
+64,Alejandro,Flores,alejandro.flores@example.com,60,Male,131652,35,767.9997536,Premium,San Antonio,
+65,Maria,Chia,maria.chia@example.com,61,Female,83841,9,1198.809792,Premium,San Diego,3
+66,Javier,Koh,javier.koh@example.com,69,Male,,25,596.8465144,Premium,San Antonio,
+67,Emilio,Zhang,emilio.zhang@example.com,43,Male,71704,30,1016.046638,Regular,,5
+68,Alice,Suzuki,alice.suzuki@example.com,64,Female,127609,24,866.0966584,Regular,Chicago,
+69,Aryan,Johnson,aryan.johnson@example.com,28,Male,,43,,Premium,San Diego,
+70,Lakshmi,Nguyen,lakshmi.nguyen@example.com,47,Female,122435,48,237.6840041,Premium,San Diego,2
+71,Priya,Balakrishnan,priya.balakrishnan@example.com,26,Female,149725,45,1312.878785,Regular,Philadelphia,
+72,Maria,Johnson,maria.johnson@example.com,57,Female,136352,35,,Premium,Dallas,5
+73,Bryan,Chen,bryan.chen@example.com,52,Male,79968,27,1107.157104,Premium,Phoenix,3
+74,Lucas,Adams,lucas.adams@example.com,19,Male,80604,38,1732.329708,Premium,,2
+75,Felix,Harris,felix.harris@example.com,43,Male,116991,48,865.8391839,Premium,San Antonio,2
+76,Gabriela,Mitchell,gabriela.mitchell@example.com,55,Female,133860,47,1777.301134,Premium,Los Angeles,4
+77,Alan,Mitchell,alan.mitchell@example.com,54,Male,137577,10,833.4890066,Regular,San Antonio,5
+78,Mateo,Lopez,mateo.lopez@example.com,60,Male,115461,27,1656.564257,Premium,San Jose,
+79,Taro,Li,taro.li@example.com,19,Male,49936,42,803.4730667,Premium,Chicago,
+80,Jose,Robinson,jose.robinson@example.com,23,Male,94923,7,1461.92889,Regular,Dallas,3
+81,Isaac,Ramirez,isaac.ramirez@example.com,59,Male,34852,32,631.9712165,Premium,Phoenix,4
+82,Fatimah,Gonzalez,fatimah.gonzalez@example.com,45,Female,46547,40,,Regular,Philadelphia,1
+83,Saul,Suzuki,saul.suzuki@example.com,26,Male,95836,27,517.230695,Regular,Los Angeles,1
+84,Fatimah,Jones,fatimah.jones@example.com,47,Female,107356,18,1907.64911,Premium,Los Angeles,4
+85,Ethan,Jackson,ethan.jackson@example.com,29,Male,73515,3,1376.773861,Regular,Philadelphia,
+86,Arjun,Young,arjun.young@example.com,21,Male,,45,953.7930923,Premium,Phoenix,4
+87,Maria,Gonzalez,maria.gonzalez@example.com,34,Female,,24,191.5373288,Regular,,2
+88,Elena,Perez,elena.perez@example.com,42,Female,144581,14,179.8750711,Premium,,2
+89,Akio,Moore,akio.moore@example.com,38,Male,,29,869.4342719,Premium,San Jose,5
+90,Emma,Lopez,emma.lopez@example.com,31,Female,87711,29,,Regular,San Antonio,3
+91,Manuel,Evans,manuel.evans@example.com,,Male,,16,751.5672502,Premium,Chicago,1
+92,Barbara,Lim,barbara.lim@example.com,38,Female,98937,24,268.9297526,Regular,San Diego,1
+93,Zainab,Taylor,zainab.taylor@example.com,39,Female,,7,129.3621462,Premium,Philadelphia,3
+94,Samuel,Adams,samuel.adams@example.com,66,Male,89890,44,1913.683001,Regular,San Diego,
+95,Ling,Lopez,ling.lopez@example.com,42,Female,32011,24,1127.749929,Premium,New York,5
+96,Luis,Carter,luis.carter@example.com,35,Male,124692,35,,Regular,Philadelphia,4
+97,Mia,Thompson,mia.thompson@example.com,66,Female,48894,42,827.5091795,Premium,San Jose,3
+98,Luis,Wilson,luis.wilson@example.com,44,Male,83736,23,1748.478671,Premium,San Antonio,5
+99,Eduardo,Adams,eduardo.adams@example.com,34,Male,144154,4,,Regular,Phoenix,1
+100,Vincent,Parker,vincent.parker@example.com,23,Male,115823,26,851.644343,Regular,,1

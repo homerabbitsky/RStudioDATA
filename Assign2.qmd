@@ -1,0 +1,131 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Assignment 2: Data Cleaning and Preparation
+
+I have already installed the libraries that you will need for this assignment. Please run the chunk below to load the libraries.
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+```
+
+Load the dataset using the code below.
+
+```{r}
+customers = read_csv("customer_data.csv")
+```
+
+Let's start the assignment. As you did on the first R assignment you can write your non-code answers in plain text (outside of R code chunks). Please create any R code chunks that you may need for your code. Use the green button at top right (see screenshot below) to create new chunks.
+
+![Screenshot of R Code Chunk Button](screen.png){width="389"}
+
+You may use the esquisse package for your data visualizations (if you wish).
+
+**Task 1:** How many rows and columns are there in the dataset?
+
+### Rows: 100 Columns: 12
+
+**Task 2:** Examine the structure of the dataset. There are several variables that could be considered to be categorical. Which variables should be converted to factors? Don't do the conversion in this task, just list the categorical variables.
+
+### Categorical variables/factors should be gender, membership status, location, and feedback score.
+
+**Task 3**: Use the "janitor" package as we did in class to clean the variable names. This cleaning should take place in the "customers" dataframe.
+
+```{r}
+
+customers = customers %>% clean_names()
+```
+
+```{r}
+
+names(customers)
+```
+
+**Task 4**: Using the new names assigned to the variables in Task 3, convert the variables that you identified as categorical (in Task 2) to factors. This conversion should take place in the "customers" dataframe.
+
+```{r}
+
+customers = customers %>% mutate(gender = as_factor(gender)) %>%
+  mutate(membership_status = as_factor(membership_status))%>%
+  mutate(location = as_factor(location))%>%
+  mutate(feedback_score = as_factor(feedback_score))
+```
+
+```{r}
+
+str(customers)
+```
+
+**Task 5**: List the variables in the dataset that have missing values (You can ignore any variables that you may have left as character variables in Task 4).
+
+## Missing
+
+### Age: 8
+
+### Annual Income: 15
+
+### Last Purchase Amount: 21
+
+### Location: 16 
+
+### Feedback Score: 18
+
+```{r}
+
+summary(customers)
+```
+
+**Task 6**: Perform row-wise deletion of missingness on the dataset. The resulting dataframe after this deletion should be a new dataframe called "row_delete". How many rows and columns are in this new dataframe?
+
+### Rows: 39
+
+### Columns: 12
+
+```{r}
+
+row_delete = customers %>% drop_na()   
+```
+
+**Task 7**: Perform column-wise deletion of missingness on the dataset. The resulting dataframe after this deletion should be a new dataframe called "col_delete". How many rows and columns are in this new dataframe?
+
+### Rows: 100
+
+### Columns: 7
+
+```{r}
+
+col_delete = customers %>% select(-age, -annual_income, -last_purchase_amount, -location, -feedback_score )
+```
+
+**Task 8:** Using the original dataset (with factor conversions as completed in Task 4), create an appropriate plot of annual income by gender. You may use the esquisse package if desired.
+
+```{r}
+
+#esquisser()
+
+ggplot(customers) +
+  aes(x = annual_income, y = gender) +
+  geom_boxplot(fill = "#112446") +
+  theme_minimal()
+```
+
+How does R indicate in the plot that one or more of these variables contains missingness?
+
+### Missingness is displayed as NA, especially within a summary of the data.
+
+Comment on the relationship between gender and annual income.
+
+### Based on the relationship between gender and annual income shows that there is a similar bracket for both male and female. However, the thin gold line in the brackets displays that females make more by a small margin. 
+
+------------------------------------------------------------------------
+
+**DELIVERABLE:** Your deliverable is an HTML document of your work. Render this Quarto file into an HTML document and upload in the appropriate location on Canvas.
