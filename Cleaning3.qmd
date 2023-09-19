@@ -1,0 +1,165 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Cleaning Data (Part 3): Titanic
+
+```{r}
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+library(titanic) #package for Titanic data
+```
+
+Load the data
+
+```{r}
+titanic = titanic::titanic_train
+```
+
+Examine the dataset
+
+```{r}
+str(titanic)
+```
+
+There are several variables that we are not going to work with, so we are going to go ahead and delete them. As usual, we use "select" for this.
+
+```{r}
+titanic = titanic %>% select(-PassengerId, -Name,-Ticket,-Fare,-Cabin,-Embarked)
+```
+
+What are our data cleaning tasks?
+
+------------------------------------------------------------------------
+
+We start by examining and converting data types. We then deal with missing data.
+
+What variables in this dataset should be considered to be categorical?
+
+------------------------------------------------------------------------
+
+```{r}
+titanic = titanic %>% mutate(Survived = as_factor(Survived)) %>%
+  mutate(Pclass = as_factor(Pclass)) %>%
+  mutate(Sex = as_factor(Sex))
+```
+
+It will also be useful for us to recode some of the levels (categories).
+
+```{r}
+titanic = titanic %>% mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
+  mutate(Pclass = fct_recode(Pclass, "3rd" = "3", "2nd" = "2", "1st" = "1"))
+```
+
+```{r}
+summary(titanic)
+```
+
+Now we look at missingness. The only missing values are in the Age variable.
+
+```{r}
+# gg_miss_upset(titanic) #this plot works when you have two or more variables with missing values
+#we can examine missingness of Age by factors such as Survived, Pclass, and Sex
+#what does this analysis tell us?
+gg_miss_fct(titanic,Survived)
+gg_miss_fct(titanic,Pclass)
+gg_miss_fct(titanic,Sex)
+```
+
+Let's impute the missing values for age using the mice package.
+
+```{r}
+set.seed(1234) #sets seed for random number generator
+imp_age = mice(titanic, m=5, method='pmm', printFlag=FALSE)
+#m is the number of imputations, 5 is a reasonable value as a default
+#pmm is "predictive mean matching" this is the imputation method for numeric data
+#printFlag reduces amount of output
+summary(imp_age)
+```
+
+Plot the imputed values to see how they compare to the original.
+
+```{r}
+densityplot(imp_age, ~Age) #red imputed, blue original
+```
+
+The general shape of the imputed values seems to align reasonably with the actual values. There is considerable variation, but that's probably reasonable.
+
+If we are satisfied with the imputed values, we can merge them into the dataset:
+
+```{r}
+titanic_complete = complete(imp_age) 
+```
+
+```{r}
+summary(titanic_complete)
+```
+
+We should check the Age variable to make sure that no illogical values were generated. For example, there should be no negative values for Age. It looks like we are OK here.
+
+------------------------------------------------------------------------
+
+With the data cleaned and prepared for analysis, we now move to the next step of the analytics process: visualization. We need to make sure that we choose the correct visualization type for each variable.
+
+When we build predictive models with this data later, we'll try to predict Survived. So, we'll visualize relative to that variable.
+
+```{r}
+ggplot(titanic_complete,aes(x=Pclass,fill=Survived)) + geom_bar()
+```
+
+Alternatively, we can use tables. It is often easier to see differences in proportions using a table rather than a bar chart.
+
+```{r}
+titanic_complete %>% tabyl(Pclass,Survived) %>%
+  adorn_percentages("row")
+```
+
+```{r}
+ggplot(titanic_complete, aes(x=Sex,fill=Survived)) + geom_bar()
+```
+
+```{r}
+titanic_complete %>% tabyl(Sex,Survived) %>%
+  adorn_percentages("row")
+```
+
+```{r}
+ggplot(titanic_complete,aes(x=Survived,y=Age)) + geom_boxplot()
+```
+
+AVOID table use when you have a numeric variable with many unique values!!
+
+```{r}
+ggplot(titanic_complete,aes(x=Survived,y=SibSp)) + geom_boxplot()
+```
+
+This plot is probably not that useful. This often happens when we have a numeric variable with just a few unique values.
+
+```{r}
+ggplot(titanic_complete,aes(x=SibSp,fill=Survived)) + geom_bar()
+```
+
+```{r}
+titanic_complete %>% tabyl(SibSp,Survived) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting() %>% 
+  adorn_ns()
+```
+
+```{r}
+ggplot(titanic_complete,aes(x=Parch,fill=Survived)) + geom_bar()
+```
+
+```{r}
+titanic_complete %>% tabyl(Parch,Survived) %>%
+  adorn_percentages("row") %>%
+  adorn_pct_formatting() %>% 
+  adorn_ns()
+```
