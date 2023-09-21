@@ -1,0 +1,185 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Linear Regression: Part 1
+
+```{r}
+#| include: false
+# what does the line above do?
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+library(ggcorrplot) #correlation plot visualization
+```
+
+![](DALL·E%202023-09-20%2018.47.47%20-%20Photorealistic%20interior%20of%20a%20steampunk%20coffee%20shop.%20.png){width="250"}
+
+We are working with a dataset from a fictional coffee shop. The data is contained in a CSV file (already uploaded in the Files pane at right). Let's load the data and take a look at what we have.
+
+```{r}
+shop = read_csv("coffee_shop.csv")
+```
+
+Examine the dataset
+
+```{r}
+str(shop)
+```
+
+This a straightforward dataset with three numeric variables: Week, Sales, and Rating.
+
+```{r}
+summary(shop)
+```
+
+Our typical data cleaning tasks of type conversion and dealing with missing data are not necessary as the variables are already in the correct type and there is no missing data (how do we know this?).
+
+------------------------------------------------------------------------
+
+Let's take a look at linear regression. The basic idea is that we want to model the linear relationship between two variables. Later, we'll look at situations where there are more than two variables. We'll define one of our variables as the **response** variable. This is the variable that we are trying to predict. In reality, this is typically defined for us before we start to attack a problem. Some or all of the other variables in the dataset may then by **predictor** variables. We assume that there is a linear relationship between predictor variables and the response variable.
+
+Before we start, the following must be true (for linear regression):
+
+-   The response variable MUST be numeric
+
+-   The predictor variables can be numeric or categorical
+
+We assume that the relationship between our predictor variable and the response variable can be modeled with the following relationship (for a single predictor variable model):
+
+$\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x_1$
+
+In this model, the $y$ variable is the response, the $x$ variable is the predictor, the $\beta_0$ is the y-intercept (the point where the regression line crosses the y axis), and the $\beta_1$ is the slope of the regression. Recall, from algebra, that if we know the slope and y-intercept that that is sufficient to be able to draw a line.
+
+![Linear Regression Line (Source: AnalystPrep)](page-135.jpg){width="300"}
+
+There are several assumptions that must be true in order for us to successfully build a linear regression model:
+
+-   Linear relationship between $x$ and $y$
+
+-   Regression model errors are independent. Error is the difference between a predicted value and the actual value. The direction and size of the "next" error in a model should not be predictable.
+
+-   The variance of errors is constant. We'll explore this further later.
+
+-   Errors should be Normally distributed. We'll explore this further later.
+
+Our workflow for linear regression looks like this:
+
+-   Import the data and familiarize ourselves with the dataset (be sure that we can identify which variable in the dataset is the response variable and which variable(s) will serve as predictors).
+
+-   Clean and prepare the data (e.g., type conversions, missing data, etc.).
+
+-   Visualize the relationship between each potential predictor variable and the response variable.
+
+-   Calculate correlation between each NUMERIC predictor and the response variable.
+
+-   Build and evaluate linear regression models.
+
+-   Select a "champion" model or set of models.
+
+------------------------------------------------------------------------
+
+In our coffee shop dataset, which variable is the response?
+
+Let's start our workflow with visualization.
+
+```{r}
+ggplot(shop,aes(x=Week,y=Sales)) + geom_point() + theme_bw()
+```
+
+How would we describe the relationship between these variables?
+
+```{r}
+ggplot(shop,aes(x=Rating,y=Sales)) + geom_point() + theme_bw()
+```
+
+How would we describe the relationship between these two variables?
+
+Next in our workflow, we look at correlation of the numeric predictors (or potential predictors) with the response. What does this plot tell us?
+
+```{r}
+corr = cor(shop) #develop basic correlation matrix
+ggcorrplot(corr, lab = TRUE, digits = 3)
+```
+
+It's pretty clear that Week has a STRONG, positive, linear relationship with Sales. Rating has a much weaker relationship (slightly negative).
+
+BIG NOTE: Correlation measures the strength of LINEAR relationship between two variables. It DOES NOT measure that strength well if the relationship is NON-LINEAR!
+
+![Correlation Examples](07aa5db140b70615a15e8631c2d7a2c4.jpg){width="400"}
+
+We can now build our linear regression models. Let's build a model with Week to predict Sales.
+
+```{r}
+model1 = lm(Sales ~ Week, shop)
+```
+
+```{r}
+summary(model1)
+```
+
+Let's talk our way through the output. It looks complicated, but there are only a few items that we really need to pay attention to.
+
+Next, we look at our regression diagnostics. The first plot puts the predicted values on the x axis and the residuals on the y. This plot should look like 1) a random scattering of points with no discernible patterns and 2) the spread (variance) of residuals should not change as we work our way from left to right on the plot. Does this happen in this plot?
+
+```{r}
+ggplot(model1, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + theme_bw()
+```
+
+Here's an example of patterned residuals (Source: ISLR textbook):
+
+![Patterned Residuals](patterned_resid.png){width="421"}
+
+Here's an example of non-constant variance of residuals (Source: ISLR textbook):
+
+![Non-Constant Variance of Residuals](var_resid.png)
+
+Next is a plot of the distribution of residuals. We can use a histogram for this. Ideally, this histogram should look like a Normal distribution.
+
+```{r}
+ggplot(model1, aes(x = .resid)) +
+  geom_histogram(binwidth = 20) + #experiment with binwidth to get "good" histogram
+  theme_bw()
+```
+
+------------------------------------------------------------------------
+
+Let's repeat this analysis, but for Rating.
+
+```{r}
+model2 = lm(Sales ~ Rating, shop)
+```
+
+```{r}
+summary(model2)
+```
+
+How do we feel about this model? How does it differ from the previous model?
+
+------------------------------------------------------------------------
+
+We can extend our regression model to have multiple predictors. We'll go into this in more detail in the future, but here's the basic idea. The regression equation expands to incorporate more than one predictor variable:
+
+$\hat{y} = \hat{\beta}_0 + \hat{\beta}_1 x_1 + \hat{\beta}_2 x_2 + ... + \hat{\beta}_n x_n$
+
+The lm model is easy to change:
+
+```{r}
+model3 = lm(Sales ~ Week + Rating, shop)
+```
+
+```{r}
+summary(model3)
+```
+
+What's the interpretation of this model?
+
+NOTE: For a "fair" comparison of models with differing numbers of variables, use the adjusted R-squared value. This value adjusts for the number of variables in the model.
