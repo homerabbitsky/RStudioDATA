@@ -1,0 +1,274 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Linear Regression: Part 3
+
+```{r}
+#| include: false
+# what does the line above do?
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+library(ggcorrplot) #correlation plot visualization
+```
+
+We are working with a dataset from a bike share company in Washington, DC. The data is contained in a CSV file (already uploaded in the Files pane at right). Let's load the data and take a look at what we have.
+
+```{r}
+bike = read_csv("DC.csv")
+```
+
+Examine the dataset
+
+```{r}
+str(bike)
+```
+
+This dataset will need a little love and care before it's ready for analysis.
+
+Let's start by deleting the "instant" variable (just a row number; not needed)
+
+```{r}
+bike = bike %>% select(-instant)
+```
+
+What other things should do to this dataset before moving on to analysis?
+
+------------------------------------------------------------------------
+
+Here's a suggested list of cleaning tasks:
+
+-   Convert season, yr, month, hr, holiday, weekday, workingday, and weathersit to factors
+
+-   Rename the levels of these variable to be more user-friendly
+
+-   Handle missing data (if any)
+
+```{r}
+bike = bike %>% mutate(season = as_factor(season)) %>% 
+  mutate(yr = as_factor(yr)) %>% 
+  mutate(mnth = as_factor(mnth)) %>%
+  mutate(hr = as_factor(hr)) %>%
+  mutate(holiday = as_factor(holiday)) %>% 
+  mutate(weekday = as_factor(weekday)) %>%
+  mutate(workingday = as_factor(workingday)) %>%
+  mutate(weathersit = as_factor(weathersit))
+ 
+str(bike)
+```
+
+Rename factor levels for the season, month, weekday, and weathersit variables.
+
+```{r}
+bike = bike %>% mutate(season = fct_recode(season, "Winter" = "1",
+                                           "Spring" = "2",
+                                           "Summer" = "3",
+                                           "Fall" = "4")) %>%
+  mutate(mnth = fct_recode(mnth, "Jan" = "1",
+                           "Feb" = "2",
+                           "Mar" = "3",
+                           "Apr" = "4",
+                           "May" = "5",
+                           "Jun" = "6",
+                           "Jul" = "7",
+                           "Aug" = "8",
+                           "Sep" = "9",
+                           "Oct" = "10",
+                           "Nov" = "11",
+                           "Dec" = "12")) %>%
+  mutate(weekday = fct_recode(weekday, "Sun" = "0",
+                              "Mon" = "1",
+                              "Tue" = "2",
+                              "Wed" = "3",
+                              "Thu" = "4",
+                              "Fri" = "5",
+                              "Sat" = "6")) %>%
+  mutate(weathersit = fct_recode(weathersit, "Clear" = "1",
+                                 "Mist" = "2",
+                                 "Lt Precip" = "3",
+                                 "Heavy Precip" = "4"))
+
+str(bike)
+```
+
+Is there missing data?
+
+```{r}
+skim(bike)
+```
+
+No missingness.
+
+Data cleaning and prep is complete so off we go to correlation and visualization.
+
+------------------------------------------------------------------------
+
+```{r}
+corr = bike %>% select_if(is.numeric) %>% cor(.)
+ggcorrplot(corr, lab = TRUE, digits = 3)
+```
+
+BIG NOTE: We can ignore "registered" and "casual" as the "count" variable is the sum of these two variables. We cannot use these variables in our models to predict count. That puts "temp" as our strongest numeric variable. Followed closely by "atemp". Note that temp and atemp are strongly correlated with each other! This can cause issues if we are not careful!
+
+Let's do our visuals.
+
+```{r}
+ggplot(bike, aes(x=temp, y=count)) + geom_point(alpha = 0.1) + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=atemp, y=count)) + geom_point(alpha = 0.1) + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=hum, y=count)) + geom_point(alpha = 0.1) + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=windspeed, y=count)) + geom_point(alpha = 0.1) + theme_bw()
+```
+
+Now categorical.
+
+```{r}
+ggplot(bike, aes(x=season, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=yr, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=mnth, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=hr, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=weekday, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=workingday, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=weathersit, y=count)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(bike, aes(x=holiday, y=count)) + geom_boxplot() + theme_bw()
+```
+
+We won't use the date variable as a predictor, but we can plot it if we wish.
+
+```{r}
+ggplot(bike, aes(x=dteday, y=count)) + geom_point(alpha = 0.1) + theme_bw()
+```
+
+------------------------------------------------------------------------
+
+It's model building time. We can utilize forward selection (add one variable at a time). This may prove tricky since we have so many categorical variables. Let's get started.
+
+Let's build a model with temp to predict count.
+
+```{r}
+model1 = lm(count ~ temp, bike)
+```
+
+```{r}
+summary(model1)
+```
+
+How do we feel about this model?
+
+Let's add atemp.
+
+```{r}
+model2 = lm(count ~ temp + atemp, bike)
+```
+
+```{r}
+summary(model2)
+```
+
+Here we see evidence of a phenomenon known as **multicollinearity**. This can occur when two or more of our predictors are strongly correlated with each other. In this model, temp and atemp are very strongly correlated. Because of this, atemp gets "pushed" out of the model. We can skip inclusion of atemp.
+
+Let's add some of our categorical variables to see how the model improves.
+
+```{r}
+model3 = lm(count ~ temp + hr, bike)
+```
+
+```{r}
+summary(model3)
+```
+
+How about this model?
+
+```{r}
+model4 = lm(count ~ temp + hr + mnth, bike)
+```
+
+```{r}
+summary(model4)
+```
+
+How about this model?
+
+As we proceed, I'm thinking to not include season as month captures that concept. Let's add weekday.
+
+```{r}
+model5 = lm(count ~ temp + hr + mnth + weekday, bike)
+```
+
+```{r}
+summary(model5)
+```
+
+```{r}
+model6 = lm(count ~ temp + hr + mnth + weekday + holiday, bike)
+```
+
+```{r}
+summary(model6)
+```
+
+```{r}
+model7 = lm(count ~ temp + hr + mnth + weekday + holiday + weathersit, bike)
+```
+
+```{r}
+summary(model7)
+```
+
+We can take a quick look at our diagnostics.
+
+```{r}
+ggplot(model7, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + theme_bw()
+```
+
+Why do we see a pattern like this?
+
+Next is a plot of the distribution of residuals. We can use a histogram for this. Ideally, this histogram should look like a Normal distribution.
+
+```{r}
+ggplot(model7, aes(x = .resid)) +
+  geom_histogram() + 
+  theme_bw()
+```
+
+This is not too bad!
+
+------------------------------------------------------------------------
