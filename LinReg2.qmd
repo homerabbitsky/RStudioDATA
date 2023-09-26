@@ -1,0 +1,231 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Linear Regression: Part 2
+
+```{r}
+#| include: false
+# what does the line above do?
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+library(ggcorrplot) #correlation plot visualization
+```
+
+We are working with a dataset from a fictional health insurance company. The data is contained in a CSV file (already uploaded in the Files pane at right). Let's load the data and take a look at what we have.
+
+```{r}
+insurance = read_csv("insurance.csv")
+```
+
+Examine the dataset
+
+```{r}
+str(insurance)
+```
+
+Some factor conversions are necessary as we have categorical variables:
+
+```{r}
+insurance = insurance %>% mutate(sex = as_factor(sex)) %>% 
+  mutate(smoker = as_factor(smoker)) %>% 
+  mutate(region = as_factor(region))
+
+summary(insurance)
+```
+
+No missing data. Move on to visualization. Let's start with our numeric variables.
+
+```{r}
+ggplot(insurance, aes(x=age,y=charges,color=smoker)) + geom_point() + theme_bw()
+```
+
+```{r}
+ggplot(insurance, aes(x=bmi,y=charges,color=smoker)) + geom_point() + theme_bw()
+```
+
+```{r}
+ggplot(insurance, aes(x=as_factor(children),y=charges)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(insurance, aes(x=smoker,y=charges)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(insurance, aes(x=region,y=charges)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(insurance, aes(x=sex,y=charges)) + geom_boxplot() + theme_bw()
+```
+
+Next in our workflow, we look at correlation of the numeric predictors (or potential predictors) with the response. NOTE: Because we have categorical variables, we need to exclude them from the correlation matrix creation!
+
+What does this plot tell us?
+
+```{r}
+corr = insurance %>% select(-sex, -smoker, -region) %>% cor(.) 
+ggcorrplot(corr, lab = TRUE, digits = 3)
+```
+
+REPEATING THIS BIG NOTE: Correlation measures the strength of LINEAR relationship between two variables. It DOES NOT measure that strength well if the relationship is NON-LINEAR!
+
+------------------------------------------------------------------------
+
+We can now build our linear regression models. Let's build a model with age to predict charges.
+
+```{r}
+model1 = lm(charges ~ age, insurance)
+```
+
+```{r}
+summary(model1)
+```
+
+How do we feel about this model?
+
+Next, we look at our regression diagnostics. The first plot puts the predicted values on the x axis and the residuals on the y. This plot should look like 1) a random scattering of points with no discernible patterns and 2) the spread (variance) of residuals should not change as we work our way from left to right on the plot. Does this happen in this plot?
+
+```{r}
+ggplot(model1, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + theme_bw()
+```
+
+This is clearly (hopefully) not just random scatter.
+
+Next is a plot of the distribution of residuals. We can use a histogram for this. Ideally, this histogram should look like a Normal distribution.
+
+```{r}
+ggplot(model1, aes(x = .resid)) +
+  geom_histogram() + 
+  theme_bw()
+```
+
+Clearly (hopefully) not Normal!
+
+------------------------------------------------------------------------
+
+Let's repeat this analysis, but for the smoker variable.\
+NOTE: smoker is categorical! This will change our interpretation of results!!
+
+```{r}
+model2 = lm(charges ~ smoker, insurance)
+```
+
+```{r}
+summary(model2)
+```
+
+Better than our age model, but how do we interpret this? What does "smokerno" mean?
+
+What are the levels of the smoker variable?
+
+R is encoding the levels like this:
+
+smoker = yes --\> 0
+
+smoker = no --\> 1
+
+R chooses which level is the "base" (i.e., equal to 0) level alphabetically.
+
+So, the regression model looks like this:
+
+charges = 32050 - 23616\*smokerno
+
+If the person is NOT a smoker, we predict charges of 32050 - 23616\*1 = 8434
+
+If they ARE a smoker, the prediction is 32050 - 23616\*0 = 32050
+
+------------------------------------------------------------------------
+
+It's pretty clear that smoker is an important variable (we see this from our visualizations and our model with smoker as the predictor). Where do we go from here?
+
+A typical process would be to add one variable at a time, stopping when the model fails to improve or when the improvement is not big enough to justify adding complexity (more variables = more complex). Broadly speaking, such an approach might be called **forward selection**.
+
+------------------------------------------------------------------------
+
+When you have all numeric variables, forward selection is very straightforward. You would typically add one variable at a time in decreasing order of correlation (from best to worst). It's a little more complicated when you have categorical variables. We'll need to use a little bit of judgement.
+
+Let's take the model with just "smoker" and add "age" and see what happens.
+
+```{r}
+model3 = lm(charges ~ smoker + age, insurance)
+```
+
+```{r}
+summary(model3)
+```
+
+How does this model look? Did the model improve?
+
+Let's add bmi.
+
+```{r}
+model4 = lm(charges ~ smoker + age + bmi, insurance)
+```
+
+```{r}
+summary(model4)
+```
+
+How does this model look? Did the model improve?
+
+```{r}
+model5 = lm(charges ~ smoker + age + bmi + children, insurance)
+```
+
+```{r}
+summary(model5)
+```
+
+How does this model look? Did the model improve?
+
+```{r}
+model6 = lm(charges ~ smoker + age + bmi + children + sex, insurance)
+```
+
+```{r}
+summary(model6)
+```
+
+OK. So the sex variable is NOT significant! We have a few options:
+
+1.  We can stop. We would perform diagnostics on Model 5 and it would be our best candidate as the "champion" model.
+
+2.  We can try the region variable in place of sex. This is worth doing.
+
+```{r}
+model7 = lm(charges ~ smoker + age + bmi + children + region, insurance)
+```
+
+```{r}
+summary(model7)
+```
+
+This is a tough call. Let's talk about the region variable for a moment.
+
+charges = 10887 -23836\*smoker + 257\*age + 339\*bmi + 475\*children - 75\*SE + 607\*NW + 959\*NE
+
+------------------------------------------------------------------------
+
+```{r}
+ggplot(model6, aes(x=.resid)) + geom_histogram() + theme_bw()
+```
+
+Residuals aren't terrible looking, but appear to be somewhat skewed.
+
+```{r}
+ggplot(model6, aes(x=.fitted,y=.resid)) + geom_point() + 
+  geom_hline(yintercept = 0) + theme_bw()
+```
+
+This is clearly NOT random scatter. Unfortunately, there's probably not much that we can do about it in this case.
