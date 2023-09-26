@@ -1,0 +1,61 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Assignment 3: Linear Regression
+
+I have already installed the libraries that you will need for this assignment. Please run the chunk below to load the libraries. Note that I am using "#\| include: false" so that your libraries code chunk will run, but not appear in your rendered document.
+
+```{r}
+#| include: false
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+library(ggcorrplot) #correlation plots
+```
+
+Load the dataset using the code below.
+
+```{r}
+sales = read_csv("vehicle_sales.csv")
+```
+
+Let's start the assignment. As you did on the first R assignment you can write your non-code answers in plain text (outside of R code chunks). Please create any R code chunks that you may need for your code. Use the green button at top right (see screenshot below) to create new chunks.
+
+![Screenshot of R Code Chunk Button](screen.png){width="389"}
+
+You may use the esquisse package for your data visualizations (if you wish).
+
+**Task 1:** How many rows and columns are there in the dataset?
+
+### There are 118 rows and 5 columns.
+
+**Task 2:** Examine the structure of the dataset and then convert the "Condition" variable to a factor.
+
+**Task 3**: The "SalePrice" variable will be our response variable in our linear regression models. Develop appropriate plots of each of the other four variables versus "SalePrice".
+
+Each plot should be accompanied by a short comment on the relationship between the variable the "SalePrice".
+
+Do these relationships match your intuition?
+
+**Task 4**: Create a correlation plot for the numeric variables. Hint: You will need to exclude one of the variables as it is not numeric.
+
+Which variable is most strongly correlated with SalePrice? Which is most weakly correlated?
+
+**Task 5**: Build a linear regression model with the strongest variable (identified in Task 4). Comment on the quality of the model.
+
+**Task 6**: Build a linear regression model with the weakest variable (identified in Task 4). Comment on the quality of the model.
+
+**Task 7**: Build a linear regression model with the Condition variable as the predictor (use only Condition, no other predictor variables). Comment on the quality of the model.
+
+**Task 8:** Create a model with all variables as predictors of SalePrice. Comment on the quality of the model. Note: Your results may be displayed in scientific notation. This is OK. Adding the code: options(scipen = 999) in the line above your model code will suppress scientific notation (if desired).
+
+------------------------------------------------------------------------
+
+**DELIVERABLE:** Your deliverable is an HTML document of your work. Render this Quarto file into an HTML document and upload in the appropriate location on Canvas.
