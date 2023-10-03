@@ -1,0 +1,26 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+The description of the case study and required work is available from the assignment page on Canvas in a PDF document. Please carefully review the required deliverables.
+
+```{r}
+#| include: false
+#| warning: false
+library(tidyverse)
+library(skimr)
+library(esquisse)
+library(readxl) #for loading data from Excel files
+library(janitor) #for data cleaning help
+library(naniar) #visualizing missingness
+library(mice) #imputation
+library(ggcorrplot) #correlation plots
+```
+
+```{r}
+#| include: false
+#| warning: false
+abc = read_csv("ABC_retail.csv")
+```
