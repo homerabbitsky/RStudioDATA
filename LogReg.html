@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>logreg</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="LogReg_files/libs/clipboard/clipboard.min.js"></script>
+<script src="LogReg_files/libs/quarto-html/quarto.js"></script>
+<script src="LogReg_files/libs/quarto-html/popper.min.js"></script>
+<script src="LogReg_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="LogReg_files/libs/quarto-html/anchor.min.js"></script>
+<link href="LogReg_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="LogReg_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="LogReg_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="LogReg_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="LogReg_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+<section id="logistic-regression-with-titanic-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="logistic-regression-with-titanic-dataset">Logistic Regression with Titanic Dataset</h2>
+<section id="logistic-regression" class="level4">
+<h4 class="anchored" data-anchor-id="logistic-regression">Logistic Regression</h4>
+<p>In linear regression we required a <u><strong>numeric response</strong></u> <span class="math inline">\((Y)\)</span> <u><strong>variable</strong></u>.</p>
+<p>Our <u><strong>predictor variable(s</strong></u><strong>)</strong> (<span class="math inline">\(X\)</span>) can be either <u><strong><em>numeric or categorical</em></strong></u><strong><em>.</em></strong></p>
+<p>What do we do if we have a categorical response? In particular, let’s focus on the situation where the response variable is <u>categorical and binary (only two categories)</u>.</p>
+<p>This is a VERY common situation in business, sports, healthcare, etc.</p>
+<p>Fortunately, this type of situation can be represented by a model that is very similar to our linear regression model. Here’s what that model, a logistic regression model, would look like:</p>
+<p><span class="math inline">\(ln\left ( \frac{p}{1-p} \right) = \beta_0 + \beta_1 x_1 + … + \beta_n x_n\)</span></p>
+<p><em>(this was Y before for linear regression) = intercept, slope, another slope. another slope….</em></p>
+<p>The right-hand side of the equation is the same as for linear regression. We see the familiar y-intercept <span class="math inline">\(\beta_0\)</span> and slopes <span class="math inline">\(\beta_n\)</span>. Where the difference emerges is on the left-hand side. Here we see: <span class="math inline">\(ln\left ( \frac{p}{1-p} \right)\)</span>. This is the natural log of the probability <span class="math inline">\(p\)</span>. Here <span class="math inline">\(p\)</span> represents the probability of the “positive” category of the response variable. <u>Note that “positive” does not necessarily mean the same thing as “good”.</u></p>
+</section>
+</section>
+<section id="odds-ratio" class="level2">
+<h2 class="anchored" data-anchor-id="odds-ratio"><strong>Odds Ratio</strong></h2>
+<p>The <span class="math inline">\(\frac{p}{1-p}\)</span> ratio is referred to as the <strong>odds ratio.</strong></p>
+<section id="example-with-titanic-data" class="level4">
+<h4 class="anchored" data-anchor-id="example-with-titanic-data">Example with Titanic Data</h4>
+<p>The chart below shows how a we might visualize the relationships between age, sex, and passenger class in the Titanic dataset.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="unnamed-chunk-544-1.png" class="img-fluid figure-img" width="578"></p>
+<figcaption class="figure-caption">Source: https://bio304-class.github.io/bio304-book/logistic-regression.html</figcaption>
+</figure>
+</div>
+<p>Load Titanic Data from the titanic package.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>titanic <span class="ot">=</span> titanic<span class="sc">::</span>titanic_train</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Structure and summary (as usual).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(titanic)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>'data.frame':   891 obs. of  12 variables:
+ $ PassengerId: int  1 2 3 4 5 6 7 8 9 10 ...
+ $ Survived   : int  0 1 1 1 0 0 0 0 1 1 ...
+ $ Pclass     : int  3 1 3 1 3 3 1 3 3 2 ...
+ $ Name       : chr  "Braund, Mr. Owen Harris" "Cumings, Mrs. John Bradley (Florence Briggs Thayer)" "Heikkinen, Miss. Laina" "Futrelle, Mrs. Jacques Heath (Lily May Peel)" ...
+ $ Sex        : chr  "male" "female" "female" "female" ...
+ $ Age        : num  22 38 26 35 35 NA 54 2 27 14 ...
+ $ SibSp      : int  1 1 0 1 0 0 0 3 0 1 ...
+ $ Parch      : int  0 0 0 0 0 0 0 1 2 0 ...
+ $ Ticket     : chr  "A/5 21171" "PC 17599" "STON/O2. 3101282" "113803" ...
+ $ Fare       : num  7.25 71.28 7.92 53.1 8.05 ...
+ $ Cabin      : chr  "" "C85" "" "C123" ...
+ $ Embarked   : chr  "S" "C" "S" "S" ...</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(titanic)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  PassengerId       Survived          Pclass          Name          
+ Min.   :  1.0   Min.   :0.0000   Min.   :1.000   Length:891        
+ 1st Qu.:223.5   1st Qu.:0.0000   1st Qu.:2.000   Class :character  
+ Median :446.0   Median :0.0000   Median :3.000   Mode  :character  
+ Mean   :446.0   Mean   :0.3838   Mean   :2.309                     
+ 3rd Qu.:668.5   3rd Qu.:1.0000   3rd Qu.:3.000                     
+ Max.   :891.0   Max.   :1.0000   Max.   :3.000                     
+                                                                    
+     Sex                 Age            SibSp           Parch       
+ Length:891         Min.   : 0.42   Min.   :0.000   Min.   :0.0000  
+ Class :character   1st Qu.:20.12   1st Qu.:0.000   1st Qu.:0.0000  
+ Mode  :character   Median :28.00   Median :0.000   Median :0.0000  
+                    Mean   :29.70   Mean   :0.523   Mean   :0.3816  
+                    3rd Qu.:38.00   3rd Qu.:1.000   3rd Qu.:0.0000  
+                    Max.   :80.00   Max.   :8.000   Max.   :6.0000  
+                    NA's   :177                                     
+    Ticket               Fare           Cabin             Embarked        
+ Length:891         Min.   :  0.00   Length:891         Length:891        
+ Class :character   1st Qu.:  7.91   Class :character   Class :character  
+ Mode  :character   Median : 14.45   Mode  :character   Mode  :character  
+                    Mean   : 32.20                                        
+                    3rd Qu.: 31.00                                        
+                    Max.   :512.33                                        
+                                                                          </code></pre>
+</div>
+</div>
+<p>Note the missing values in the potentially important Age variable.</p>
+</section>
+</section>
+<section id="factor-conversion" class="level2">
+<h2 class="anchored" data-anchor-id="factor-conversion">Factor Conversion</h2>
+<p>Convert appropriate variables to factors. Re-code factor levels for Survived to be easier to read. Delete unused variables.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>titanic <span class="ot">=</span> titanic <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Survived =</span> <span class="fu">as_factor</span>(Survived)) <span class="sc">%&gt;%</span> </span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Survived =</span> <span class="fu">fct_recode</span>(Survived, <span class="st">"No"</span> <span class="ot">=</span> <span class="st">"0"</span>, <span class="st">"Yes"</span> <span class="ot">=</span> <span class="st">"1"</span> )) <span class="sc">%&gt;%</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Pclass =</span> <span class="fu">as_factor</span>(Pclass)) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Sex =</span> <span class="fu">as_factor</span>(Sex)) <span class="sc">%&gt;%</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>PassengerId, <span class="sc">-</span>Name, <span class="sc">-</span>Ticket, <span class="sc">-</span>Fare, <span class="sc">-</span>Cabin, <span class="sc">-</span>Embarked)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(titanic)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>'data.frame':   891 obs. of  6 variables:
+ $ Survived: Factor w/ 2 levels "No","Yes": 1 2 2 2 1 1 1 1 2 2 ...
+ $ Pclass  : Factor w/ 3 levels "1","2","3": 3 1 3 1 3 3 1 3 3 2 ...
+ $ Sex     : Factor w/ 2 levels "male","female": 1 2 2 2 1 1 1 1 2 2 ...
+ $ Age     : num  22 38 26 35 35 NA 54 2 27 14 ...
+ $ SibSp   : int  1 1 0 1 0 0 0 3 0 1 ...
+ $ Parch   : int  0 0 0 0 0 0 0 1 2 0 ...</code></pre>
+</div>
+</div>
+</section>
+<section id="dealing-with-missingness" class="level2">
+<h2 class="anchored" data-anchor-id="dealing-with-missingness">Dealing with Missingness</h2>
+<p>Here we use imputation for the Age variable (as we have done before).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>) <span class="co">#sets seed for random number generator</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>imp_age <span class="ot">=</span> <span class="fu">mice</span>(titanic, <span class="at">m=</span><span class="dv">5</span>, <span class="at">method=</span><span class="st">'pmm'</span>, <span class="at">printFlag=</span><span class="cn">FALSE</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#m is the number of imputations, 5 is a reasonable value as a default</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#pmm is "predictive mean matching" = imputation method for numeric data</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#printFlag reduces amount of output</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(imp_age)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Class: mids
+Number of multiple imputations:  5 
+Imputation methods:
+Survived   Pclass      Sex      Age    SibSp    Parch 
+      ""       ""       ""    "pmm"       ""       "" 
+PredictorMatrix:
+         Survived Pclass Sex Age SibSp Parch
+Survived        0      1   1   1     1     1
+Pclass          1      0   1   1     1     1
+Sex             1      1   0   1     1     1
+Age             1      1   1   0     1     1
+SibSp           1      1   1   1     0     1
+Parch           1      1   1   1     1     0</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>titanic_complete <span class="ot">=</span> <span class="fu">complete</span>(imp_age) </span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(titanic_complete)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Survived  Pclass      Sex           Age            SibSp      
+ No :549   1:216   male  :577   Min.   : 0.42   Min.   :0.000  
+ Yes:342   2:184   female:314   1st Qu.:19.00   1st Qu.:0.000  
+           3:491                Median :28.00   Median :0.000  
+                                Mean   :29.32   Mean   :0.523  
+                                3rd Qu.:39.00   3rd Qu.:1.000  
+                                Max.   :80.00   Max.   :8.000  
+     Parch       
+ Min.   :0.0000  
+ 1st Qu.:0.0000  
+ Median :0.0000  
+ Mean   :0.3816  
+ 3rd Qu.:0.0000  
+ Max.   :6.0000  </code></pre>
+</div>
+</div>
+</section>
+<section id="visualization" class="level2">
+<h2 class="anchored" data-anchor-id="visualization">Visualization</h2>
+<p>We have performed visualization of each variable against Survived before, but let’s do it again just as a quick reminder.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(titanic_complete, <span class="fu">aes</span>(<span class="at">x=</span>Pclass, <span class="at">fill =</span> Survived)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Alternative (look at tabular data)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>titanic_complete <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(Survived,Pclass) <span class="sc">%&gt;%</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>(<span class="st">"col"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Survived         1         2         3
+       No 0.3703704 0.5271739 0.7576375
+      Yes 0.6296296 0.4728261 0.2423625</code></pre>
+</div>
+</div>
+<p>Makes sense that passenger class predicts survival.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(titanic_complete, <span class="fu">aes</span>(<span class="at">x=</span>Sex, <span class="at">fill =</span> Survived)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>titanic_complete <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(Survived,Sex) <span class="sc">%&gt;%</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>(<span class="st">"col"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Survived      male    female
+       No 0.8110919 0.2579618
+      Yes 0.1889081 0.7420382</code></pre>
+</div>
+</div>
+<p>This data supports the notion that women survived at a higher rate than men.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(titanic_complete, <span class="fu">aes</span>(<span class="at">x=</span>Survived, <span class="at">y=</span> Age)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p><u>Age, on its own, does not seem to predict survival.</u> There is little difference in the age distribution of survivors and those that did not survive.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(titanic_complete, <span class="fu">aes</span>(<span class="at">x=</span>SibSp, <span class="at">fill =</span> Survived)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Hard to tell much from the graph. Alternative (look at tabular data)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>titanic_complete <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(Survived,SibSp) <span class="sc">%&gt;%</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>(<span class="st">"col"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Survived         0         1         2    3         4 5 8
+       No 0.6546053 0.4641148 0.5357143 0.75 0.8333333 1 1
+      Yes 0.3453947 0.5358852 0.4642857 0.25 0.1666667 0 0</code></pre>
+</div>
+</div>
+<p>Larger numbers of siblings + spouses seems to suggest less chance of survival, but the sample size for the larger numbers is pretty low. Being alone (SibSp = 0) seems to be bad.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(titanic_complete, <span class="fu">aes</span>(<span class="at">x=</span>Parch, <span class="at">fill =</span> Survived)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Similar to above, hard to tell much from the graph. Alternative (look at tabular data)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>titanic_complete <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(Survived,Parch) <span class="sc">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>(<span class="st">"col"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Survived         0         1   2   3 4   5 6
+       No 0.6563422 0.4491525 0.5 0.4 1 0.8 1
+      Yes 0.3436578 0.5508475 0.5 0.6 0 0.2 0</code></pre>
+</div>
+</div>
+<p>Some decrease in survival rate as Parch increases, but still dealing with small samples.</p>
+<p><em>In accordance with Dr.&nbsp;Hill, (turn the model into a categorical variable model to lump in a more than ___ {for the SibSp/ParCh that exceed more than 3 bc it is such a small data set})</em></p>
+</section>
+<section id="building-logistic-regression-models" class="level1">
+<h1>Building Logistic Regression Models</h1>
+<p>We know Pclass is important. Let’s build a model with Pclass. Note the format and the use of the <u>glm</u> function. The structure of the syntax is very similar to a linear regression model.</p>
+<section id="response-varible-the-predictor-y-x" class="level2">
+<h2 class="anchored" data-anchor-id="response-varible-the-predictor-y-x">response varible ~ the predictor (Y ~ X)</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>mod1 <span class="ot">=</span> <span class="fu">glm</span>(Survived <span class="sc">~</span> Pclass , titanic_complete, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = Survived ~ Pclass, family = "binomial", data = titanic_complete)
+
+Coefficients:
+            Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)   0.5306     0.1409   3.766 0.000166 ***
+Pclass2      -0.6394     0.2041  -3.133 0.001731 ** 
+Pclass3      -1.6704     0.1759  -9.496  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1186.7  on 890  degrees of freedom
+Residual deviance: 1083.1  on 888  degrees of freedom
+AIC: 1089.1
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+</div>
+<p>Estimate Std. = shows the natural log <u><strong>(pos/neg and the relative size &amp; direction is all we need to know)</strong></u></p>
+<p><em>[1st class is best]</em></p>
+<ol type="1">
+<li><strong>AIC</strong></li>
+<li><strong>P value</strong></li>
+<li><strong>Slopes</strong></li>
+</ol>
+<p>Pclass has three levels (1, 2, and 3) representing each of the three classes of passenger on the ship. The variable is represented by two of these categories in model summary. Note the negative coefficients for Pclass2 and Pclass3. This suggests that probability of survival drops for those classes compared to first class (as we expect). The dropoff is more severe (larger coefficient) for Pclass3.</p>
+<p>CAUTION: Model coefficients do NOT directly tell us the change in probability!</p>
+<p>Note the AIC of this model (a measure of model quality) is 1089.1. We can use this value to compare this model to others. Smaller AIC is better.</p>
+</section>
+<section id="add-gender-to-the-model." class="level2">
+<h2 class="anchored" data-anchor-id="add-gender-to-the-model."><strong>Add gender to the model.</strong></h2>
+<p><u><strong>(Binomial = Logistic Regression)</strong></u></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>mod2 <span class="ot">=</span> <span class="fu">glm</span>(Survived <span class="sc">~</span> Pclass <span class="sc">+</span> Sex, titanic_complete, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = Survived ~ Pclass + Sex, family = "binomial", data = titanic_complete)
+
+Coefficients:
+            Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)  -0.3448     0.1679  -2.053 0.040080 *  
+Pclass2      -0.8380     0.2447  -3.424 0.000618 ***
+Pclass3      -1.9055     0.2141  -8.898  &lt; 2e-16 ***
+Sexfemale     2.6419     0.1841  14.351  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1186.66  on 890  degrees of freedom
+Residual deviance:  826.89  on 887  degrees of freedom
+AIC: 834.89
+
+Number of Fisher Scoring iterations: 4</code></pre>
+</div>
+</div>
+<p>Males are much less likely to survive than females (as expected). The <strong>AIC</strong> of this model is less than for the first model, so this model is better.</p>
+</section>
+<section id="add-age." class="level2">
+<h2 class="anchored" data-anchor-id="add-age.">Add Age.</h2>
+</section>
+<section id="aic-quality-of-a-model-smaller-is-better" class="level2">
+<h2 class="anchored" data-anchor-id="aic-quality-of-a-model-smaller-is-better"><strong>AIC</strong> = quality of a model (SMALLER IS BETTER)</h2>
+<p>Metric is only useful in comparison</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>mod3 <span class="ot">=</span> <span class="fu">glm</span>(Survived <span class="sc">~</span> Pclass <span class="sc">+</span> Sex <span class="sc">+</span> Age , titanic_complete, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = Survived ~ Pclass + Sex + Age, family = "binomial", 
+    data = titanic_complete)
+
+Coefficients:
+             Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)  1.001405   0.312100   3.209  0.00133 ** 
+Pclass2     -1.178727   0.260274  -4.529 5.93e-06 ***
+Pclass3     -2.459637   0.249514  -9.858  &lt; 2e-16 ***
+Sexfemale    2.603539   0.187510  13.885  &lt; 2e-16 ***
+Age         -0.033320   0.006525  -5.107 3.28e-07 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1186.66  on 890  degrees of freedom
+Residual deviance:  799.17  on 886  degrees of freedom
+AIC: 809.17
+
+Number of Fisher Scoring iterations: 5</code></pre>
+</div>
+</div>
+<p>In this model, Age is significant and has a negative coefficient <em>(older = less likely to survive)</em>. AIC of this model is better.</p>
+</section>
+<section id="predictions" class="level2">
+<h2 class="anchored" data-anchor-id="predictions">Predictions</h2>
+<p>Let’s make predictions on sample passenger. By setting type = “response” we are ensuring that we get a predicted probability.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>newdata <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">Sex =</span> <span class="st">"male"</span>, <span class="at">Pclass =</span> <span class="st">"3"</span>, <span class="at">Age =</span> <span class="dv">44</span>)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(mod3, newdata, <span class="at">type=</span><span class="st">"response"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         1 
+0.05096464 </code></pre>
+</div>
+</div>
+<p>If we were forced to classify this passenger as survived or died, what would we pick?</p>
+<p><strong>Not looking good…RIP (5%, didn’t survive)</strong></p>
+<p>Another passenger.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>newdata <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">Sex =</span> <span class="st">"female"</span>, <span class="at">Pclass =</span> <span class="st">"1"</span>, <span class="at">Age =</span> <span class="dv">10</span>)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(mod3, newdata, <span class="at">type=</span><span class="st">"response"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        1 
+0.9634466 </code></pre>
+</div>
+</div>
+<p>If we were forced to classify this passenger as survived or died, what would we pick?</p>
+<p><strong>This looks good (96%, She will likely survive)</strong></p>
+<p>One more.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>newdata <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="at">Sex =</span> <span class="st">"male"</span>, <span class="at">Pclass =</span> <span class="st">"2"</span>, <span class="at">Age =</span> <span class="dv">22</span>)</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">predict</span>(mod3, newdata, <span class="at">type=</span><span class="st">"response"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>        1 
+0.2869255 </code></pre>
+</div>
+</div>
+<p>If we were forced to classify this passenger as survived or died, what would we pick?</p>
+<p><strong>RIP (28%, He didn’t make it)</strong></p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
