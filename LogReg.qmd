@@ -1,0 +1,193 @@
+## Logistic Regression with Titanic Dataset
+
+```{r}
+#| include: false
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+```
+
+#### Logistic Regression
+
+In linear regression we required a numeric response $(Y)$ variable. Our predictor variable(s) ($X$) can be either numeric or categorical. What do we do if we have a categorical response? In particular, let's focus on the situation where the response variable is categorical and binary (only two categories). This is a VERY common situation in business, sports, healthcare, etc.
+
+Fortunately, this type of situation can be represented by a model that is very similar to our linear regression model. Here's what that model, a logistic regression model, would look like:
+
+$ln\left ( \frac{p}{1-p} \right) = \beta_0 + \beta_1 x_1 + … + \beta_n x_n$
+
+The right-hand side of the equation is the same as for linear regression. We see the familiar y-intercept $\beta_0$ and slopes $\beta_n$. Where the difference emerges is on the left-hand side. Here we see: $ln\left ( \frac{p}{1-p} \right)$. This is the natural log of the probability $p$. Here $p$ represents the probability of the "positive" category of the response variable. Note that "positive" does not necessarily mean the same thing as "good".
+
+The $\frac{p}{1-p}$ ratio is referred to as the odds ratio.
+
+#### Example with Titanic Data
+
+The chart below shows how a we might visualize the relationships between age, sex, and passenger class in the Titanic dataset.
+
+![Source: https://bio304-class.github.io/bio304-book/logistic-regression.html](unnamed-chunk-544-1.png){width="578"}
+
+Load Titanic Data from the titanic package.
+
+```{r}
+titanic = titanic::titanic_train
+```
+
+Structure and summary (as usual).
+
+```{r}
+str(titanic)
+summary(titanic)
+```
+
+Note the missing values in the potentially important Age variable.
+
+#### Factor Conversion
+
+Convert appropriate variables to factors. Re-code factor levels for Survived to be easier to read. Delete unused variables.
+
+```{r}
+titanic = titanic %>% mutate(Survived = as_factor(Survived)) %>% 
+  mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
+  mutate(Pclass = as_factor(Pclass)) %>% mutate(Sex = as_factor(Sex)) %>%
+  select(-PassengerId, -Name, -Ticket, -Fare, -Cabin, -Embarked)
+str(titanic)
+```
+
+#### Dealing with Missingnes
+
+Here we use imputation for the Age variable (as we have done before).
+
+```{r}
+set.seed(1234) #sets seed for random number generator
+imp_age = mice(titanic, m=5, method='pmm', printFlag=FALSE)
+#m is the number of imputations, 5 is a reasonable value as a default
+#pmm is "predictive mean matching" = imputation method for numeric data
+#printFlag reduces amount of output
+summary(imp_age)
+
+titanic_complete = complete(imp_age) 
+summary(titanic_complete)
+
+```
+
+#### Visualization
+
+We have performed visualization of each variable against Survived before, but let's do it again just as a quick reminder.
+
+```{r}
+ggplot(titanic_complete, aes(x=Pclass, fill = Survived)) + geom_bar() + theme_bw()
+```
+
+Alternative (look at tabular data)
+
+```{r}
+titanic_complete %>% tabyl(Survived,Pclass) %>%
+  adorn_percentages("col")
+```
+
+Makes sense that passenger class predicts survival.
+
+```{r}
+ggplot(titanic_complete, aes(x=Sex, fill = Survived)) + geom_bar() + theme_bw()
+```
+
+```{r}
+titanic_complete %>% tabyl(Survived,Sex) %>%
+  adorn_percentages("col")
+```
+
+This data supports the notion that women survived at a higher rate than men.
+
+```{r}
+ggplot(titanic_complete, aes(x=Survived, y= Age)) + geom_boxplot() + theme_bw()
+```
+
+Age, on its own, does not seem to predict survival. There is little difference in the age distribution of survivors and those that did not survive.
+
+```{r}
+ggplot(titanic_complete, aes(x=SibSp, fill = Survived)) + geom_bar() + theme_bw()
+```
+
+Hard to tell much from the graph. Alternative (look at tabular data)
+
+```{r}
+titanic_complete %>% tabyl(Survived,SibSp) %>%
+  adorn_percentages("col")
+```
+
+Larger numbers of siblings + spouses seems to suggest less chance of survival, but the sample size for the larger numbers is pretty low. Being alone (SibSp = 0) seems to be bad.
+
+```{r}
+ggplot(titanic_complete, aes(x=Parch, fill = Survived)) + geom_bar() + theme_bw()
+```
+
+Similar to above, hard to tell much from the graph. Alternative (look at tabular data)
+
+```{r}
+titanic_complete %>% tabyl(Survived,Parch) %>%
+  adorn_percentages("col")
+```
+
+Some decrease in survival rate as Parch increases, but still dealing with small samples.
+
+#### Building Logistic Regression Models
+
+We know Pclass is important. Let's build a model with Pclass. Note the format and the use of the glm function. The structure of the syntax is very similar to a linear regression model.
+
+```{r}
+mod1 = glm(Survived ~ Pclass , titanic_complete, family = "binomial")
+summary(mod1)
+```
+
+Pclass has three levels (1, 2, and 3) representing each of the three classes of passenger on the ship. The variable is represented by two of these categories in model summary. Note the negative coefficients for Pclass2 and Pclass3. This suggests that probability of survival drops for those classes compared to first class (as we expect). The dropoff is more severe (larger coefficient) for Pclass3.
+
+CAUTION: Model coefficients do NOT directly tell us the change in probability!
+
+Note the AIC of this model (a measure of model quality) is 1089.1. We can use this value to compare this model to others. Smaller AIC is better.
+
+Add gender to the model.
+
+```{r}
+mod2 = glm(Survived ~ Pclass + Sex, titanic_complete, family = "binomial")
+summary(mod2)
+```
+
+Males are much less likely to survive than females (as expected). The AIC of this model is less than for the first model, so this model is better.
+
+Add Age.
+
+```{r}
+mod3 = glm(Survived ~ Pclass + Sex + Age , titanic_complete, family = "binomial")
+summary(mod3)
+```
+
+In this model, Age is significant and has a negative coefficient (older = less likely to survive). AIC of this model is better.
+
+#### Predictions
+
+Let's make predictions on sample passenger. By setting type = "response" we are ensuring that we get a predicted probability.
+
+```{r}
+newdata = data.frame(Sex = "male", Pclass = "3", Age = 44)
+predict(mod3, newdata, type="response")
+```
+
+If we were forced to classify this passenger as survived or died, what would we pick?
+
+Another passenger.
+
+```{r}
+newdata = data.frame(Sex = "female", Pclass = "1", Age = 10)
+predict(mod3, newdata, type="response")
+```
+
+If we were forced to classify this passenger as survived or died, what would we pick?
+
+One more.
+
+```{r}
+newdata = data.frame(Sex = "male", Pclass = "2", Age = 22)
+predict(mod3, newdata, type="response")
+```
+
+If we were forced to classify this passenger as survived or died, what would we pick?
