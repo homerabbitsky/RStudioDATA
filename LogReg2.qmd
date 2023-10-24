@@ -1,0 +1,212 @@
+## Logistic Regression with Titanic Dataset
+
+```{r}
+#| include: false
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+```
+
+#### Logistic Regression (Part 2)
+
+In the last lecture we introduced logistic regression models. Recall that these models take the form:
+
+$ln\left ( \frac{p}{1-p} \right) = \beta_0 + \beta_1 x_1 + … + \beta_n x_n$
+
+The output from a logistic regression model is (at least initially) an estimated probability, $p$. In this lecture we consider the conversion of $p$ to class prediction.
+
+## Data Loading, Cleaning, and Preparation
+
+Load Titanic Data from the titanic package.
+
+```{r}
+# load the data
+titanic = titanic::titanic_train
+
+# factor conversion and recoding
+titanic = titanic %>% mutate(Survived = as_factor(Survived)) %>% 
+  mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
+  mutate(Pclass = as_factor(Pclass)) %>% mutate(Sex = as_factor(Sex)) %>%
+  select(-PassengerId, -Name, -Ticket, -Fare, -Cabin, -Embarked)
+
+# imputation
+set.seed(1234) #sets seed for random number generator
+imp_age = mice(titanic, m=5, method='pmm', printFlag=FALSE)
+#m is the number of imputations, 5 is a reasonable value as a default
+#pmm is "predictive mean matching" = imputation method for numeric data
+#printFlag reduces amount of output
+
+titanic_complete = complete(imp_age) 
+
+# view the cleaned and prepared data
+summary(titanic_complete)
+
+```
+
+## A Logistic Regression Model
+
+Last time we built the logistic regression model shown below. This model featured Pclass, Sex, and Age to predict Survived.
+
+```{r}
+mod3 = glm(Survived ~ Pclass + Sex + Age , titanic_complete, family = "binomial")
+summary(mod3)
+```
+
+*directionality of the slope*
+
+We then used this model to make predictions on several fake passengers.
+
+## Predictions (Probabilities)
+
+Let's make predictions on sample passenger. By setting type = "response" we are ensuring that we get a predicted probability.
+
+```{r}
+newdata = data.frame(Sex = "male", Pclass = "3", Age = 44)
+predict(mod3, newdata, type="response")
+```
+
+If we were forced to classify this passenger as survived or died, what would we pick?
+
+Another passenger.
+
+```{r}
+newdata = data.frame(Sex = "female", Pclass = "1", Age = 10)
+predict(mod3, newdata, type="response")
+```
+
+If we were forced to classify this passenger as survived or died, what would we pick?
+
+One more.
+
+```{r}
+newdata = data.frame(Sex = "male", Pclass = "1", Age = 29)
+predict(mod3, newdata, type="response")
+```
+
+If we were forced to classify this passenger as survived or died, what would we pick?
+
+## Converting to Class Predictions
+
+In some applications a probability is not enough. We want to assign an observation to one of the two classes in our response variable. To do this, we need to convert the logistic regression probability estimate with probability thresholds. The default probability threshold is 0.5.
+
+-   If an observation has a predicted probability greater than 0.5, we assign it to the positive class (Survived = "Yes" in the case of the Titanic data)
+
+-   If an observation has a predicted probability less than 0.5, we assign it to the negative class (Survived = "No" in the case of the Titanic data)
+
+We start by producing predicted probabilities for each row in the dataset.
+
+```{r}
+predictions = predict(mod3, type="response")
+```
+
+Construct a "confusion matrix":
+
+```{r}
+table1 = table(predictions > 0.5, titanic_complete$Survived)
+table1
+```
+
+Let's talk about what this confusion matrix is telling us.
+
+![](conf_mat.png){width="526"}
+
+The **rows** in the confusion matrix correspond to our predictions. The "TRUE" corresponds to observations with a probability greater than 0.5. These would be predicted "Yes" values in the Titanic dataset. The "FALSE" corresponds to observations with an estimated probability less than 0.5. These would be "No" values in the Titanic dataset.
+
+The **columns** in the confusion matrix correspond to the actual (observed) values in the dataset.
+
+Where are the correct predictions in the confusion matrix? How about the incorrect ones?
+
+### **They survived and predicted that they would not survive.**
+
+## Assessing the Quality of Predictions
+
+We know that we can look at metrics like AIC and the significance of predictors to make some assessment of the quality of a logistic regression model. What other methods are there?
+
+**Accuracy** is a key measure of the quality of our predictions (once we have converted our probability estimates to class predictions). Accuracy is simply the number of correct predictions divided by the total number of predictions.
+
+For the Titanic example above:
+
+```{r}
+# nrow is a function that gives the number of rows in a dataset
+(470+241)/nrow(titanic_complete)
+```
+
+We can also automate this a bit:
+
+```{r}
+(table1[1,1] + table1[2,2])/nrow(titanic_complete)
+```
+
+Is accuracy always a good measure of model quality? No!
+
+What is the accuracy of the model that resulted in this confusion matrix?
+
+99.9% of TSA, Fraud
+
+![](confmat2.png){width="531"}
+
+Is this is a good model? **No, because 1 was left out.** *(Tell you that you have X, but you don't or tell you you don't have X, but you do..)*
+
+Sacrifice accuracy for being more sensitive.
+
+**Sensitivity** is a measure of a model's ability to accurately predict "positive" results. In the Titanic model:
+
+```{r}
+241/(241+101)
+```
+
+**Specificity** is a measure of a model's ability to accurately predict "negative" results. In the Titanic model:
+
+```{r}
+470/(470+79)
+```
+
+Among accuracy, sensitivity, and specificity, which is most important?
+
+## Relationships Between Accuracy, Sensitivity, and Specificity (Threshold Selection)
+
+```{r}
+pred = prediction(predictions, titanic_complete$Survived)
+perf = performance(pred,"tpr","fpr")
+plot(perf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+
+Let's talk our way through this plot.
+
+What's the best threshold value? Once again, it depends!
+
+Two popular options:
+
+-   Find the threshold that attempts to best balance sensitivity and specificity
+
+-   Find the threshold that maximizes accuracy
+
+Balancing sensitivity and specificity:
+
+```{r}
+opt.cut = function(perf, pred){
+    cut.ind = mapply(FUN=function(x, y, p){
+        d = (x - 0)^2 + (y-1)^2
+        ind = which(d == min(d))
+        c(sensitivity = y[[ind]], specificity = 1-x[[ind]], 
+            cutoff = p[[ind]])
+    }, perf@x.values, perf@y.values, pred@cutoffs)
+}
+print(opt.cut(perf, pred))
+```
+
+Maximizing accuracy:
+
+```{r}
+# plot accuracy as function of threshold
+acc.perf = performance(pred, measure = "acc")
+plot(acc.perf)
+
+# find best threshold to maximize accuracy
+ind = which.max( slot(acc.perf, "y.values")[[1]] )
+acc = slot(acc.perf, "y.values")[[1]][ind]
+cutoff = slot(acc.perf, "x.values")[[1]][ind]
+print(c(accuracy= acc, cutoff = cutoff))
+```
