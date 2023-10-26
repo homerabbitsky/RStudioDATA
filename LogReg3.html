@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>logreg3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="LogReg3_files/libs/clipboard/clipboard.min.js"></script>
+<script src="LogReg3_files/libs/quarto-html/quarto.js"></script>
+<script src="LogReg3_files/libs/quarto-html/popper.min.js"></script>
+<script src="LogReg3_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="LogReg3_files/libs/quarto-html/anchor.min.js"></script>
+<link href="LogReg3_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="LogReg3_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="LogReg3_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="LogReg3_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="LogReg3_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+<section id="logistic-regression---another-example" class="level2">
+<h2 class="anchored" data-anchor-id="logistic-regression---another-example">Logistic Regression - Another Example</h2>
+<section id="data-loading-cleaning-and-preparation" class="level4">
+<h4 class="anchored" data-anchor-id="data-loading-cleaning-and-preparation">Data Loading, Cleaning, and Preparation</h4>
+<p>Load the dataset</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="st">"CSData.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 150000 Columns: 9
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+dbl (9): SeriousDlqin2yrs, RevolvingUtilizationOfUnsecuredLines, age, DebtRa...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+</div>
+<p>Structure and summary</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(credit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>spc_tbl_ [150,000 × 9] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+ $ SeriousDlqin2yrs                    : num [1:150000] 1 0 0 0 0 0 0 0 0 0 ...
+ $ RevolvingUtilizationOfUnsecuredLines: num [1:150000] 0.766 0.957 0.658 0.234 0.907 ...
+ $ age                                 : num [1:150000] 45 40 38 30 49 74 57 39 27 57 ...
+ $ DebtRatio                           : num [1:150000] 0.803 0.1219 0.0851 0.036 0.0249 ...
+ $ MonthlyIncome                       : num [1:150000] 9120 2600 3042 3300 63588 ...
+ $ NumberOfOpenCreditLinesAndLoans     : num [1:150000] 13 4 2 5 7 3 8 8 2 9 ...
+ $ NumberOfTimes90DaysLate             : num [1:150000] 0 0 1 0 0 0 0 0 0 0 ...
+ $ NumberRealEstateLoansOrLines        : num [1:150000] 6 0 0 0 1 1 3 0 0 4 ...
+ $ NumberOfDependents                  : num [1:150000] 2 1 0 0 0 1 0 0 NA 2 ...
+ - attr(*, "spec")=
+  .. cols(
+  ..   SeriousDlqin2yrs = col_double(),
+  ..   RevolvingUtilizationOfUnsecuredLines = col_double(),
+  ..   age = col_double(),
+  ..   DebtRatio = col_double(),
+  ..   MonthlyIncome = col_double(),
+  ..   NumberOfOpenCreditLinesAndLoans = col_double(),
+  ..   NumberOfTimes90DaysLate = col_double(),
+  ..   NumberRealEstateLoansOrLines = col_double(),
+  ..   NumberOfDependents = col_double()
+  .. )
+ - attr(*, "problems")=&lt;externalptr&gt; </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(credit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> SeriousDlqin2yrs  RevolvingUtilizationOfUnsecuredLines      age       
+ Min.   :0.00000   Min.   :    0.00                     Min.   :  0.0  
+ 1st Qu.:0.00000   1st Qu.:    0.03                     1st Qu.: 41.0  
+ Median :0.00000   Median :    0.15                     Median : 52.0  
+ Mean   :0.06684   Mean   :    6.05                     Mean   : 52.3  
+ 3rd Qu.:0.00000   3rd Qu.:    0.56                     3rd Qu.: 63.0  
+ Max.   :1.00000   Max.   :50708.00                     Max.   :109.0  
+                                                                       
+   DebtRatio        MonthlyIncome     NumberOfOpenCreditLinesAndLoans
+ Min.   :     0.0   Min.   :      0   Min.   : 0.000                 
+ 1st Qu.:     0.2   1st Qu.:   3400   1st Qu.: 5.000                 
+ Median :     0.4   Median :   5400   Median : 8.000                 
+ Mean   :   353.0   Mean   :   6670   Mean   : 8.453                 
+ 3rd Qu.:     0.9   3rd Qu.:   8249   3rd Qu.:11.000                 
+ Max.   :329664.0   Max.   :3008750   Max.   :58.000                 
+                    NA's   :29731                                    
+ NumberOfTimes90DaysLate NumberRealEstateLoansOrLines NumberOfDependents
+ Min.   : 0.000          Min.   : 0.000               Min.   : 0.000    
+ 1st Qu.: 0.000          1st Qu.: 0.000               1st Qu.: 0.000    
+ Median : 0.000          Median : 1.000               Median : 0.000    
+ Mean   : 0.266          Mean   : 1.018               Mean   : 0.757    
+ 3rd Qu.: 0.000          3rd Qu.: 2.000               3rd Qu.: 1.000    
+ Max.   :98.000          Max.   :54.000               Max.   :20.000    
+                                                      NA's   :3924      </code></pre>
+</div>
+</div>
+<p>Factor conversion. Convert and recode the response variable SeriousDlqin2yrs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">SeriousDlqin2yrs =</span> <span class="fu">as_factor</span>(SeriousDlqin2yrs)) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">SeriousDlqin2yrs =</span> <span class="fu">fct_recode</span>(SeriousDlqin2yrs, <span class="st">"No"</span> <span class="ot">=</span> <span class="st">"0"</span>, <span class="st">"Yes"</span> <span class="ot">=</span> <span class="st">"1"</span> )) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>There is significant opportunity in this dataset to get rid of unusual values and outliers.</p>
+<p>Look at distributions of variables.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>RevolvingUtilizationOfUnsecuredLines)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>There are some strange large values. Let’s filter out and re-examine histogram.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(RevolvingUtilizationOfUnsecuredLines <span class="sc">&lt;</span> <span class="dv">2</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>RevolvingUtilizationOfUnsecuredLines)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This looks much more reasonable.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>age)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Age distribution seems reasonable.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>DebtRatio)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Strange large value(s) let’s filter out and re-examine histogram.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(DebtRatio <span class="sc">&lt;</span> <span class="dv">3</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>DebtRatio)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>MonthlyIncome)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1985 rows containing non-finite values (`stat_bin()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Large value(s) let’s filter out and re-examine histogram. Also will drop all rows with any NAs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(MonthlyIncome <span class="sc">&lt;</span> <span class="dv">20000</span>) <span class="sc">%&gt;%</span> <span class="fu">drop_na</span>() </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>MonthlyIncome)) <span class="sc">+</span> <span class="fu">geom_histogram</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>NumberOfOpenCreditLinesAndLoans</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>NumberOfOpenCreditLinesAndLoans)) <span class="sc">+</span> <span class="fu">geom_bar</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(NumberOfOpenCreditLinesAndLoans <span class="sc">&lt;</span> <span class="dv">40</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>NumberOfTimes90DaysLate</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>NumberOfTimes90DaysLate)) <span class="sc">+</span> <span class="fu">geom_bar</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(NumberOfTimes90DaysLate <span class="sc">&lt;</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>NumberRealEstateLoansOrLines</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>NumberRealEstateLoansOrLines)) <span class="sc">+</span> <span class="fu">geom_bar</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(NumberRealEstateLoansOrLines <span class="sc">&lt;</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>NumberOfDependents</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit, <span class="fu">aes</span>(<span class="at">x=</span>NumberOfDependents)) <span class="sc">+</span> <span class="fu">geom_bar</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>credit <span class="ot">=</span> credit <span class="sc">%&gt;%</span> <span class="fu">filter</span>(NumberOfDependents <span class="sc">&lt;</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Moving on to visualization versus the response</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit,<span class="fu">aes</span>(<span class="at">x=</span>SeriousDlqin2yrs, <span class="at">y=</span>RevolvingUtilizationOfUnsecuredLines)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit,<span class="fu">aes</span>(<span class="at">x=</span>SeriousDlqin2yrs,<span class="at">y=</span>age)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit,<span class="fu">aes</span>(<span class="at">x=</span>SeriousDlqin2yrs,<span class="at">y=</span>DebtRatio)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit,<span class="fu">aes</span>(<span class="at">x=</span>SeriousDlqin2yrs,<span class="at">y=</span>MonthlyIncome)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-19-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit,<span class="fu">aes</span>(<span class="at">x=</span>SeriousDlqin2yrs,<span class="at">y=</span>NumberOfOpenCreditLinesAndLoans)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(credit,<span class="fu">aes</span>(<span class="at">x=</span>NumberOfTimes90DaysLate, <span class="at">fill =</span> SeriousDlqin2yrs)) <span class="sc">+</span> <span class="fu">geom_bar</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-21-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>credit <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(NumberOfTimes90DaysLate, SeriousDlqin2yrs) <span class="sc">%&gt;%</span> </span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_ns</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> NumberOfTimes90DaysLate                          No                        Yes
+                       0 0.950768378789976 (103,011) 0.0492316212100235 (5,334)
+                       1            0.6625   (2,756)             0.3375 (1,404)
+                       2 0.499163879598662     (597)  0.500836120401338   (599)
+                       3 0.423954372623574     (223)  0.576045627376426   (303)
+                       4 0.311965811965812      (73)  0.688034188034188   (161)
+                       5              0.37      (37)               0.63    (63)
+                       6 0.396551724137931      (23)  0.603448275862069    (35)
+                       7 0.259259259259259       (7)  0.740740740740741    (20)
+                       8               0.4       (6)                0.6     (9)
+                       9 0.214285714285714       (3)  0.785714285714286    (11)</code></pre>
+</div>
+</div>
+<p>The next couple of variables are similar, so we’ll go straight to a table:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>credit <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(NumberRealEstateLoansOrLines, SeriousDlqin2yrs) <span class="sc">%&gt;%</span> </span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_ns</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> NumberRealEstateLoansOrLines                         No
+                            0 0.915682846811466 (38,238)
+                            1 0.942969763496657 (37,798)
+                            2 0.941302196714823 (23,782)
+                            3 0.929475587703436  (4,626)
+                            4 0.908094948265368  (1,492)
+                            5 0.867469879518072    (432)
+                            6 0.834782608695652    (192)
+                            7 0.843478260869565     (97)
+                            8 0.728813559322034     (43)
+                            9               0.8     (36)
+                        Yes
+ 0.0843171531885342 (3,521)
+  0.057030236503343 (2,286)
+ 0.0586978032851771 (1,483)
+ 0.0705244122965642   (351)
+ 0.0919050517346318   (151)
+  0.132530120481928    (66)
+  0.165217391304348    (38)
+  0.156521739130435    (18)
+  0.271186440677966    (16)
+                0.2     (9)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>credit <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(NumberOfDependents, SeriousDlqin2yrs) <span class="sc">%&gt;%</span> </span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_percentages</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">adorn_ns</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> NumberOfDependents                         No                        Yes
+                  0 0.941217779905834 (58,972) 0.0587822200941665 (3,683)
+                  1 0.925685764259204 (21,699)  0.074314235740796 (1,742)
+                  2 0.917178811823237 (15,670) 0.0828211881767632 (1,415)
+                  3 0.909079799584504  (7,439) 0.0909202004154955   (744)
+                  4 0.892121212121212  (2,208)  0.107878787878788   (267)
+                  5 0.900641025641026    (562) 0.0993589743589744    (62)
+                  6 0.866197183098592    (123)  0.133802816901408    (19)
+                  7 0.888888888888889     (40)  0.111111111111111     (5)
+                  8 0.904761904761905     (19) 0.0952380952380952     (2)
+                  9                 1      (4)                  0     (0)</code></pre>
+</div>
+</div>
+<p>Let’s start our model building with utilization. NOTE: Here we are simply trying to start our model-building process with we think is a strong variable.</p>
+<p><em>RevolvingUtilizationOfUnsecuredLines = displayed the biggest yes/no relationship</em></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>mod1 <span class="ot">=</span> <span class="fu">glm</span>(SeriousDlqin2yrs <span class="sc">~</span> RevolvingUtilizationOfUnsecuredLines, credit, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = SeriousDlqin2yrs ~ RevolvingUtilizationOfUnsecuredLines, 
+    family = "binomial", data = credit)
+
+Coefficients:
+                                     Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)                          -3.89131    0.02394 -162.56   &lt;2e-16 ***
+RevolvingUtilizationOfUnsecuredLines  2.64581    0.03205   82.55   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 57714  on 114674  degrees of freedom
+Residual deviance: 50149  on 114673  degrees of freedom
+AIC: 50153
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+</div>
+<p>Let’s add age:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>mod2 <span class="ot">=</span> <span class="fu">glm</span>(SeriousDlqin2yrs <span class="sc">~</span> RevolvingUtilizationOfUnsecuredLines <span class="sc">+</span> age, credit, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = SeriousDlqin2yrs ~ RevolvingUtilizationOfUnsecuredLines + 
+    age, family = "binomial", data = credit)
+
+Coefficients:
+                                       Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)                          -3.2595019  0.0538075  -60.58   &lt;2e-16 ***
+RevolvingUtilizationOfUnsecuredLines  2.5383735  0.0330465   76.81   &lt;2e-16 ***
+age                                  -0.0119014  0.0009283  -12.82   &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 57714  on 114674  degrees of freedom
+Residual deviance: 49982  on 114672  degrees of freedom
+AIC: 49988
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+</div>
+<p>Let’s be a bit impatient and add all of the variables.</p>
+<p><strong>. puts all variables into the model</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>mod3 <span class="ot">=</span> <span class="fu">glm</span>(SeriousDlqin2yrs <span class="sc">~</span>., credit, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = SeriousDlqin2yrs ~ ., family = "binomial", data = credit)
+
+Coefficients:
+                                       Estimate Std. Error z value Pr(&gt;|z|)    
+(Intercept)                          -3.540e+00  6.251e-02 -56.624  &lt; 2e-16 ***
+RevolvingUtilizationOfUnsecuredLines  2.240e+00  3.693e-02  60.649  &lt; 2e-16 ***
+age                                  -1.418e-02  1.042e-03 -13.605  &lt; 2e-16 ***
+DebtRatio                             2.674e-01  4.327e-02   6.180 6.39e-10 ***
+MonthlyIncome                        -5.560e-05  5.006e-06 -11.107  &lt; 2e-16 ***
+NumberOfOpenCreditLinesAndLoans       4.605e-02  2.921e-03  15.765  &lt; 2e-16 ***
+NumberOfTimes90DaysLate               9.080e-01  1.913e-02  47.466  &lt; 2e-16 ***
+NumberRealEstateLoansOrLines          9.419e-02  1.567e-02   6.013 1.83e-09 ***
+NumberOfDependents                    8.078e-02  1.075e-02   7.518 5.58e-14 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 57714  on 114674  degrees of freedom
+Residual deviance: 46612  on 114666  degrees of freedom
+AIC: 46630
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+</div>
+<p>When you have a large number of observations in a statistical analysis, even small effects or weak predictors can lead to significant p-values, simply because the larger sample size provides more statistical power to detect differences or relationships that may not be practically significant. This underscores the importance of considering both statistical significance and practical significance when interpreting p-values.</p>
+<p>Let’s move on to the consideration of probability thresholds (cutoffs), accuracy, etc.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># make predictions (probability estimates on the dataset)</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>predictions <span class="ot">=</span> <span class="fu">predict</span>(mod3, <span class="at">type=</span><span class="st">"response"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Construct a “confusion matrix”:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>table1 <span class="ot">=</span> <span class="fu">table</span>(predictions <span class="sc">&gt;</span> <span class="fl">0.5</span>, credit<span class="sc">$</span>SeriousDlqin2yrs)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>table1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       
+            No    Yes
+  FALSE 106132   7042
+  TRUE     604    897</code></pre>
+</div>
+</div>
+<p><strong>Accuracy</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>(table1[<span class="dv">1</span>,<span class="dv">1</span>] <span class="sc">+</span> table1[<span class="dv">2</span>,<span class="dv">2</span>])<span class="sc">/</span><span class="fu">nrow</span>(credit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9333246</code></pre>
+</div>
+</div>
+<p>Let’s take a moment to talk about <strong>naive accuracy.</strong></p>
+<p>Do more people in the dataset become delinquent or not? We can use a simple table to find out:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(credit<span class="sc">$</span>SeriousDlqin2yrs)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    No    Yes 
+106736   7939 </code></pre>
+</div>
+</div>
+<p>This is a very UNBALANCED dataset. The vast majority do NOT become delinquent! The “No” is our “majority class” in the response variable. There are a variety of strategies that we can use to deal with unbalanced data, but we must be careful when evaluating accuracy with this kind of data.</p>
+<p>What would our accuracy be if we simply (naively!) classified everyone as a “No” (the majority class).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="dv">106736</span><span class="sc">/</span><span class="fu">nrow</span>(credit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9307696</code></pre>
+</div>
+</div>
+<p>Our logistic regression model has slightly better accuracy than this “naive” model. The naive model can serve as a benchmark against which to compare our model performance.</p>
+<p><strong>Sensitivity</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="dv">897</span><span class="sc">/</span>(<span class="dv">897</span><span class="sc">+</span><span class="dv">7042</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.1129865</code></pre>
+</div>
+</div>
+<p><strong>Specificity</strong>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="dv">106132</span><span class="sc">/</span>(<span class="dv">106132</span><span class="sc">+</span><span class="dv">604</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9943412</code></pre>
+</div>
+</div>
+<p>How do we feel about these metrics for this model?</p>
+</section>
+<section id="relationships-between-accuracy-sensitivity-and-specificity-threshold-selection" class="level4">
+<h4 class="anchored" data-anchor-id="relationships-between-accuracy-sensitivity-and-specificity-threshold-selection">Relationships Between Accuracy, Sensitivity, and Specificity (Threshold Selection)</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">=</span> <span class="fu">prediction</span>(predictions, credit<span class="sc">$</span>SeriousDlqin2yrs)</span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>perf <span class="ot">=</span> <span class="fu">performance</span>(pred,<span class="st">"tpr"</span>,<span class="st">"fpr"</span>)</span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf, <span class="at">colorize=</span><span class="cn">TRUE</span>, <span class="at">print.cutoffs.at=</span><span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">by=</span><span class="fl">0.1</span>), <span class="at">text.adj=</span><span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.2</span>,<span class="fl">1.7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This ROC plot looks quite different than the one we saw before for the Titanic. Most of the thresholds are crammed in the lower lefthand corner. What should we select for a threshold?</p>
+<p>Balancing sensitivity and specificity (is this what we really want to do?):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>opt.cut <span class="ot">=</span> <span class="cf">function</span>(perf, pred){</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>    cut.ind <span class="ot">=</span> <span class="fu">mapply</span>(<span class="at">FUN=</span><span class="cf">function</span>(x, y, p){</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>        d <span class="ot">=</span> (x <span class="sc">-</span> <span class="dv">0</span>)<span class="sc">^</span><span class="dv">2</span> <span class="sc">+</span> (y<span class="dv">-1</span>)<span class="sc">^</span><span class="dv">2</span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>        ind <span class="ot">=</span> <span class="fu">which</span>(d <span class="sc">==</span> <span class="fu">min</span>(d))</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">c</span>(<span class="at">sensitivity =</span> y[[ind]], <span class="at">specificity =</span> <span class="dv">1</span><span class="sc">-</span>x[[ind]], </span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">cutoff =</span> p[[ind]])</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>    }, perf<span class="sc">@</span>x.values, perf<span class="sc">@</span>y.values, pred<span class="sc">@</span>cutoffs)</span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">opt.cut</span>(perf, pred))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                 [,1]
+sensitivity 0.7410253
+specificity 0.7410152
+cutoff      0.0660057</code></pre>
+</div>
+</div>
+<p>Maximizing accuracy (is this the most important thing?):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot accuracy as function of threshold</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>acc.perf <span class="ot">=</span> <span class="fu">performance</span>(pred, <span class="at">measure =</span> <span class="st">"acc"</span>)</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(acc.perf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="LogReg3_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb66"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="co"># find best threshold to maximize accuracy</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">=</span> <span class="fu">which.max</span>( <span class="fu">slot</span>(acc.perf, <span class="st">"y.values"</span>)[[<span class="dv">1</span>]] )</span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">=</span> <span class="fu">slot</span>(acc.perf, <span class="st">"y.values"</span>)[[<span class="dv">1</span>]][ind]</span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>cutoff <span class="ot">=</span> <span class="fu">slot</span>(acc.perf, <span class="st">"x.values"</span>)[[<span class="dv">1</span>]][ind]</span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">c</span>(<span class="at">accuracy=</span> acc, <span class="at">cutoff =</span> cutoff))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    accuracy cutoff.26937 
+   0.9336909    0.3989454 </code></pre>
+</div>
+</div>
+<p>We know that, in this situation, that we are facing unbalanced data AND unbalanced costs of misclassifying.</p>
+<p>We can directly consider the imbalance of misclassification cost in our threshold selection using the code below. Our “false negative” cost would be high (saying something is negative when it’s really positive). We can capture this relative cost by setting cost.fp and cost.fn:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb68"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a>cost.perf <span class="ot">=</span> <span class="fu">performance</span>(pred, <span class="st">"cost"</span>, <span class="at">cost.fp =</span> <span class="dv">1</span>, <span class="at">cost.fn =</span> <span class="dv">10</span>)</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>pred<span class="sc">@</span>cutoffs[[<span class="dv">1</span>]][<span class="fu">which.min</span>(cost.perf<span class="sc">@</span>y.values[[<span class="dv">1</span>]])]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     88487 
+0.09631981 </code></pre>
+</div>
+</div>
+<p>Here’s the confusion matrix with this cutoff:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>table2 <span class="ot">=</span> <span class="fu">table</span>(predictions <span class="sc">&gt;</span> <span class="fl">0.09631981</span>, credit<span class="sc">$</span>SeriousDlqin2yrs)</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>table2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       
+           No   Yes
+  FALSE 88026  2793
+  TRUE  18710  5146</code></pre>
+</div>
+</div>
+<p>What would accuracy, sensitivity, and specificity look like for this model?</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
