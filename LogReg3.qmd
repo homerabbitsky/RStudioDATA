@@ -1,0 +1,277 @@
+## Logistic Regression - Another Example
+
+```{r}
+#| include: false 
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+```
+
+#### Data Loading, Cleaning, and Preparation
+
+Load the dataset
+
+```{r}
+credit = read_csv("CSData.csv")
+```
+
+Structure and summary
+
+```{r}
+str(credit)
+summary(credit)
+```
+
+Factor conversion. Convert and recode the response variable SeriousDlqin2yrs.
+
+```{r}
+credit = credit %>% mutate(SeriousDlqin2yrs = as_factor(SeriousDlqin2yrs)) %>% 
+  mutate(SeriousDlqin2yrs = fct_recode(SeriousDlqin2yrs, "No" = "0", "Yes" = "1" )) 
+```
+
+There is significant opportunity in this dataset to get rid of unusual values and outliers.
+
+Look at distributions of variables.
+
+```{r}
+ggplot(credit, aes(x=RevolvingUtilizationOfUnsecuredLines)) + geom_histogram()
+```
+
+There are some strange large values. Let's filter out and re-examine histogram.
+
+```{r}
+credit = credit %>% filter(RevolvingUtilizationOfUnsecuredLines < 2)
+ggplot(credit, aes(x=RevolvingUtilizationOfUnsecuredLines)) + geom_histogram()
+```
+
+This looks much more reasonable.
+
+```{r}
+ggplot(credit, aes(x=age)) + geom_histogram()
+```
+
+Age distribution seems reasonable.
+
+```{r}
+ggplot(credit, aes(x=DebtRatio)) + geom_histogram()
+```
+
+Strange large value(s) let's filter out and re-examine histogram.
+
+```{r}
+credit = credit %>% filter(DebtRatio < 3)
+ggplot(credit, aes(x=DebtRatio)) + geom_histogram()
+```
+
+```{r}
+ggplot(credit, aes(x=MonthlyIncome)) + geom_histogram()
+```
+
+Large value(s) let's filter out and re-examine histogram. Also will drop all rows with any NAs.
+
+```{r}
+credit = credit %>% filter(MonthlyIncome < 20000) %>% drop_na() 
+ggplot(credit, aes(x=MonthlyIncome)) + geom_histogram()
+```
+
+NumberOfOpenCreditLinesAndLoans
+
+```{r}
+ggplot(credit, aes(x=NumberOfOpenCreditLinesAndLoans)) + geom_bar()
+credit = credit %>% filter(NumberOfOpenCreditLinesAndLoans < 40)
+```
+
+NumberOfTimes90DaysLate
+
+```{r}
+ggplot(credit, aes(x=NumberOfTimes90DaysLate)) + geom_bar()
+credit = credit %>% filter(NumberOfTimes90DaysLate < 10)
+```
+
+NumberRealEstateLoansOrLines
+
+```{r}
+ggplot(credit, aes(x=NumberRealEstateLoansOrLines)) + geom_bar()
+credit = credit %>% filter(NumberRealEstateLoansOrLines < 10)
+```
+
+NumberOfDependents
+
+```{r}
+ggplot(credit, aes(x=NumberOfDependents)) + geom_bar()
+credit = credit %>% filter(NumberOfDependents < 10)
+```
+
+Moving on to visualization versus the response
+
+```{r}
+ggplot(credit,aes(x=SeriousDlqin2yrs, y=RevolvingUtilizationOfUnsecuredLines)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(credit,aes(x=SeriousDlqin2yrs,y=age)) + geom_boxplot()
+```
+
+```{r}
+ggplot(credit,aes(x=SeriousDlqin2yrs,y=DebtRatio)) + geom_boxplot()
+```
+
+```{r}
+ggplot(credit,aes(x=SeriousDlqin2yrs,y=MonthlyIncome)) + geom_boxplot()
+```
+
+```{r}
+ggplot(credit,aes(x=SeriousDlqin2yrs,y=NumberOfOpenCreditLinesAndLoans)) + geom_boxplot()
+```
+
+```{r}
+ggplot(credit,aes(x=NumberOfTimes90DaysLate, fill = SeriousDlqin2yrs)) + geom_bar()
+credit %>% tabyl(NumberOfTimes90DaysLate, SeriousDlqin2yrs) %>% 
+  adorn_percentages() %>%
+  adorn_ns()
+```
+
+The next couple of variables are similar, so we'll go straight to a table:
+
+```{r}
+credit %>% tabyl(NumberRealEstateLoansOrLines, SeriousDlqin2yrs) %>% 
+  adorn_percentages() %>%
+  adorn_ns()
+
+credit %>% tabyl(NumberOfDependents, SeriousDlqin2yrs) %>% 
+  adorn_percentages() %>%
+  adorn_ns()
+```
+
+Let's start our model building with utilization. NOTE: Here we are simply trying to start our model-building process with we think is a strong variable.
+
+```{r}
+mod1 = glm(SeriousDlqin2yrs ~ RevolvingUtilizationOfUnsecuredLines, credit, family = "binomial")
+summary(mod1)
+```
+
+Let's add age:
+
+```{r}
+mod2 = glm(SeriousDlqin2yrs ~ RevolvingUtilizationOfUnsecuredLines + age, credit, family = "binomial")
+summary(mod2)
+```
+
+Let's be a bit impatient and add all of the variables.
+
+```{r}
+mod3 = glm(SeriousDlqin2yrs ~., credit, family = "binomial")
+summary(mod3)
+```
+
+When you have a large number of observations in a statistical analysis, even small effects or weak predictors can lead to significant p-values, simply because the larger sample size provides more statistical power to detect differences or relationships that may not be practically significant. This underscores the importance of considering both statistical significance and practical significance when interpreting p-values.
+
+Let's move on to the consideration of probability thresholds (cutoffs), accuracy, etc.
+
+```{r}
+# make predictions (probability estimates on the dataset)
+predictions = predict(mod3, type="response")
+```
+
+Construct a "confusion matrix":
+
+```{r}
+table1 = table(predictions > 0.5, credit$SeriousDlqin2yrs)
+table1
+```
+
+**Accuracy**
+
+```{r}
+(table1[1,1] + table1[2,2])/nrow(credit)
+```
+
+Let's take a moment to talk about **naive accuracy.**
+
+Do more people in the dataset become delinquent or not? We can use a simple table to find out:
+
+```{r}
+table(credit$SeriousDlqin2yrs)
+```
+
+This is a very UNBALANCED dataset. The vast majority do NOT become delinquent! The "No" is our "majority class" in the response variable. There are a variety of strategies that we can use to deal with unbalanced data, but we must be careful when evaluating accuracy with this kind of data.
+
+What would our accuracy be if we simply (naively!) classified everyone as a "No" (the majority class).
+
+```{r}
+106736/nrow(credit)
+```
+
+Our logistic regression model has slightly better accuracy than this "naive" model. The naive model can serve as a benchmark against which to compare our model performance.
+
+**Sensitivity**:
+
+```{r}
+897/(897+7042)
+```
+
+**Specificity**:
+
+```{r}
+106132/(106132+604)
+```
+
+How do we feel about these metrics for this model?
+
+#### Relationships Between Accuracy, Sensitivity, and Specificity (Threshold Selection)
+
+```{r}
+pred = prediction(predictions, credit$SeriousDlqin2yrs)
+perf = performance(pred,"tpr","fpr")
+plot(perf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+```
+
+This ROC plot looks quite different than the one we saw before for the Titanic. Most of the thresholds are crammed in the lower lefthand corner. What should we select for a threshold?
+
+Balancing sensitivity and specificity (is this what we really want to do?):
+
+```{r}
+opt.cut = function(perf, pred){
+    cut.ind = mapply(FUN=function(x, y, p){
+        d = (x - 0)^2 + (y-1)^2
+        ind = which(d == min(d))
+        c(sensitivity = y[[ind]], specificity = 1-x[[ind]], 
+            cutoff = p[[ind]])
+    }, perf@x.values, perf@y.values, pred@cutoffs)
+}
+print(opt.cut(perf, pred))
+```
+
+Maximizing accuracy (is this the most important thing?):
+
+```{r}
+# plot accuracy as function of threshold
+acc.perf = performance(pred, measure = "acc")
+plot(acc.perf)
+
+# find best threshold to maximize accuracy
+ind = which.max( slot(acc.perf, "y.values")[[1]] )
+acc = slot(acc.perf, "y.values")[[1]][ind]
+cutoff = slot(acc.perf, "x.values")[[1]][ind]
+print(c(accuracy= acc, cutoff = cutoff))
+```
+
+We know that, in this situation, that we are facing unbalanced data AND unbalanced costs of misclassifying.
+
+We can directly consider the imbalance of misclassification cost in our threshold selection using the code below. Our "false negative" cost would be high (saying something is negative when it's really positive). We can capture this relative cost by setting cost.fp and cost.fn:
+
+```{r}
+cost.perf = performance(pred, "cost", cost.fp = 1, cost.fn = 10)
+pred@cutoffs[[1]][which.min(cost.perf@y.values[[1]])]
+```
+
+Here's the confusion matrix with this cutoff:
+
+```{r}
+table2 = table(predictions > 0.09631981, credit$SeriousDlqin2yrs)
+table2
+```
+
+What would accuracy, sensitivity, and specificity look like for this model?
