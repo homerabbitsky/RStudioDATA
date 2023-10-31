@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>classtree1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="ClassTree1_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ClassTree1_files/libs/quarto-html/quarto.js"></script>
+<script src="ClassTree1_files/libs/quarto-html/popper.min.js"></script>
+<script src="ClassTree1_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ClassTree1_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ClassTree1_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ClassTree1_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ClassTree1_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ClassTree1_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ClassTree1_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+<section id="classification-trees---part-1" class="level2">
+<h2 class="anchored" data-anchor-id="classification-trees---part-1">Classification Trees - Part 1</h2>
+</section>
+<section id="classification-trees" class="level2">
+<h2 class="anchored" data-anchor-id="classification-trees">Classification Trees</h2>
+<p>A classification tree is a type of predictive model used to sorting data into classes. In the context of binary classification, the goal is to partition data into two groups based on input features (variables). Classification trees are intuitive, easy to visualize, and widely used in various fields such as finance, healthcare, and marketing.</p>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 7 Columns: 4
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (2): Applicant, Default
+dbl (2): Age, Income
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(bank,<span class="fu">aes</span>(<span class="at">x=</span>Age,<span class="at">y=</span>Income,<span class="at">colour=</span>Default)) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">5</span>) <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree1_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Can we develop “splits” (cuts) that would separate the “Yes” dots from the “No” dots? Our splits will take the form of horizontal or vertical lines. The splits are “recursive”. This means that the lines cannot cross each other.</p>
+<p>Do you see a place where we could draw a horizontal or vertical line that would best separate red and blue dots?</p>
+<p>How about a vertical line at Age = 42.5 (or so)?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(bank,<span class="fu">aes</span>(<span class="at">x=</span>Age,<span class="at">y=</span>Income,<span class="at">colour=</span>Default)) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">5</span>) <span class="sc">+</span> <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fl">42.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree1_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>How “pure” is the partition to the right of this new line? <strong>1</strong></p>
+<p>Where could we draw another line (could be horizontal or vertical) to continue to partition the data?</p>
+<p>How about Income = 55?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(bank,<span class="fu">aes</span>(<span class="at">x=</span>Age,<span class="at">y=</span>Income,<span class="at">colour=</span>Default)) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">5</span>) <span class="sc">+</span> <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fl">42.5</span>) <span class="sc">+</span> </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">25</span>, <span class="at">y =</span> <span class="dv">55</span>, <span class="at">xend =</span> <span class="fl">42.5</span>, <span class="at">yend =</span> <span class="dv">55</span>), <span class="at">color=</span><span class="st">"black"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree1_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>One more partition should do it…</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(bank,<span class="fu">aes</span>(<span class="at">x=</span>Age,<span class="at">y=</span>Income,<span class="at">colour=</span>Default)) <span class="sc">+</span> <span class="fu">geom_point</span>(<span class="at">size=</span><span class="dv">5</span>) <span class="sc">+</span> <span class="fu">theme_bw</span>() <span class="sc">+</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fl">42.5</span>) <span class="sc">+</span> </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">25</span>, <span class="at">y =</span> <span class="dv">55</span>, <span class="at">xend =</span> <span class="fl">42.5</span>, <span class="at">yend =</span> <span class="dv">55</span>), <span class="at">color=</span><span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_segment</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="fl">27.5</span>, <span class="at">y =</span> <span class="dv">40</span>, <span class="at">xend =</span> <span class="fl">27.5</span>, <span class="at">yend =</span> <span class="dv">55</span>), <span class="at">color=</span><span class="st">"black"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree1_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We’ve now created four “perfectly pure” partitions. How do we use these partitions to make predictions?</p>
+<p>What would we predict for Age of 35 and Income of 50?</p>
+<p>How about Age of 32 and Income of 65?</p>
+<p>Let’s see what the tree would look like as it is built out split by split.</p>
+<p>NOTE: At each split, we move to the LEFT if the condition is TRUE and to the RIGHT if the condition is FALSE!</p>
+<hr>
+<p>DRAW BY HAND</p>
+</section>
+<section id="yes-lefttrue-no-rightfalse" class="level2">
+<h2 class="anchored" data-anchor-id="yes-lefttrue-no-rightfalse">(yes = left/true &amp; no = right/false)</h2>
+<hr>
+<hr>
+<hr>
+<p>Here we conducted splits of our data until we achieved perfect purity (i.e., all partitions contain dots of a single color only). In reality, this rarely happens. We could even have two points of different classes (colors) sitting directly on top of each other :) A question should be: When do we stop splitting? Why should we stop splitting (i.e., why not try as hard as possible to generate perfect partitions)?</p>
+<p><strong>We utilize criteria that stop the growth of our trees in order to prevent overfitting! Overfitting refers to the phenomenon where our model works very well on the data that we built the model with, but generalizes poorly to new data.</strong></p>
+</section>
+<section id="overfitting-works-good-on-data-to-make-model.-it-will-not-work-against-real-world-data." class="level2">
+<h2 class="anchored" data-anchor-id="overfitting-works-good-on-data-to-make-model.-it-will-not-work-against-real-world-data.">Overfitting, works good on data to make model. It will not work against real world data.</h2>
+<p>REASONABLE RULE OF THUMB: Less complex trees are less likely to overfit! Try to build a tree complex enough to describe what’s happening in the data, but not so complex as to likely overfit!</p>
+<p>There are a couple of common criteria that we can utilize to control tree growth:</p>
+<ul>
+<li><p><strong>Maximum depth</strong> - Stop growing the tree after it reaches a certain depth.</p></li>
+<li><p><strong>Minimum split size</strong> - Stop splitting if the number of observations in a branch are below a certain threshold.</p></li>
+<li><p><strong>Purity gain</strong> - Stop splitting if the split does not provide “enough” improvement to purity (over some threshold). NOTE: This is the approach that the “rpart” package in R uses by default.</p></li>
+</ul>
+<p>Hopefully this seems relatively straightforward :) It is pretty easy to visualize when you only have two predictor variables and the data for those two variables is already pretty separated. Things become much more complex when the there are more than two predictors and the data is more realistic. For this, we turn to the “rpart” package from R.</p>
+</section>
+<section id="data-loading-cleaning-and-preparation" class="level2">
+<h2 class="anchored" data-anchor-id="data-loading-cleaning-and-preparation">Data Loading, Cleaning, and Preparation</h2>
+<p>Load the dataset</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>titanic <span class="ot">=</span> titanic<span class="sc">::</span>titanic_train</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Clean and prep work (as usual)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># factor conversion and recoding</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>titanic <span class="ot">=</span> titanic <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Survived =</span> <span class="fu">as_factor</span>(Survived)) <span class="sc">%&gt;%</span> </span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Survived =</span> <span class="fu">fct_recode</span>(Survived, <span class="st">"No"</span> <span class="ot">=</span> <span class="st">"0"</span>, <span class="st">"Yes"</span> <span class="ot">=</span> <span class="st">"1"</span> )) <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Pclass =</span> <span class="fu">as_factor</span>(Pclass)) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Sex =</span> <span class="fu">as_factor</span>(Sex)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>PassengerId, <span class="sc">-</span>Name, <span class="sc">-</span>Ticket, <span class="sc">-</span>Fare, <span class="sc">-</span>Cabin, <span class="sc">-</span>Embarked)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># imputation</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>) <span class="co">#sets seed for random number generator</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>imp_age <span class="ot">=</span> <span class="fu">mice</span>(titanic, <span class="at">m=</span><span class="dv">5</span>, <span class="at">method=</span><span class="st">'pmm'</span>, <span class="at">printFlag=</span><span class="cn">FALSE</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">#m is the number of imputations, 5 is a reasonable value as a default</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">#pmm is "predictive mean matching" = imputation method for numeric data</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">#printFlag reduces amount of output</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>titanic_complete <span class="ot">=</span> <span class="fu">complete</span>(imp_age) </span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># view the cleaned and prepared data</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(titanic_complete)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Survived  Pclass      Sex           Age            SibSp      
+ No :549   1:216   male  :577   Min.   : 0.42   Min.   :0.000  
+ Yes:342   2:184   female:314   1st Qu.:19.00   1st Qu.:0.000  
+           3:491                Median :28.00   Median :0.000  
+                                Mean   :29.32   Mean   :0.523  
+                                3rd Qu.:39.00   3rd Qu.:1.000  
+                                Max.   :80.00   Max.   :8.000  
+     Parch       
+ Min.   :0.0000  
+ 1st Qu.:0.0000  
+ Median :0.0000  
+ Mean   :0.3816  
+ 3rd Qu.:0.0000  
+ Max.   :6.0000  </code></pre>
+</div>
+</div>
+</section>
+<section id="building-classification-trees" class="level2">
+<h2 class="anchored" data-anchor-id="building-classification-trees">Building Classification Trees</h2>
+<p>Let’s build a simple classification tree using only “Pclass” to predict “Survived”. How do we expect that this tree will “split” on the Pclass variable?</p>
+</section>
+<section id="build-trees-only-for-classification-problems-categorical-with-two-variables-same-situation-w-logistic-regression." class="level2">
+<h2 class="anchored" data-anchor-id="build-trees-only-for-classification-problems-categorical-with-two-variables-same-situation-w-logistic-regression."><strong>Build trees only for classification problems, categorical with two variables ( same situation w logistic regression).</strong></h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>tree_model1 <span class="ot">=</span> <span class="fu">rpart</span>(Survived <span class="sc">~</span> Pclass, <span class="at">data =</span> titanic_complete, <span class="at">method =</span> <span class="st">"class"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s take a look at the summary of the model. We’ll discuss the interpretation of this in more detail later.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(tree_model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Call:
+rpart(formula = Survived ~ Pclass, data = titanic_complete, method = "class")
+  n= 891 
+
+          CP nsplit rel error    xerror       xstd
+1 0.13450292      0 1.0000000 1.0000000 0.04244576
+2 0.02923977      1 0.8654971 0.8654971 0.04110923
+3 0.01000000      2 0.8362573 0.8538012 0.04096754
+
+Variable importance
+Pclass 
+   100 
+
+Node number 1: 891 observations,    complexity param=0.1345029
+  predicted class=No   expected loss=0.3838384  P(node) =1
+    class counts:   549   342
+   probabilities: 0.616 0.384 
+  left son=2 (491 obs) right son=3 (400 obs)
+  Primary splits:
+      Pclass splits as  RRL, improve=43.78183, (0 missing)
+
+Node number 2: 491 observations
+  predicted class=No   expected loss=0.2423625  P(node) =0.5510662
+    class counts:   372   119
+   probabilities: 0.758 0.242 
+
+Node number 3: 400 observations,    complexity param=0.02923977
+  predicted class=Yes  expected loss=0.4425  P(node) =0.4489338
+    class counts:   177   223
+   probabilities: 0.443 0.557 
+  left son=6 (184 obs) right son=7 (216 obs)
+  Primary splits:
+      Pclass splits as  RL-, improve=4.885998, (0 missing)
+
+Node number 6: 184 observations
+  predicted class=No   expected loss=0.4728261  P(node) =0.2065095
+    class counts:    97    87
+   probabilities: 0.527 0.473 
+
+Node number 7: 216 observations
+  predicted class=Yes  expected loss=0.3703704  P(node) =0.2424242
+    class counts:    80   136
+   probabilities: 0.370 0.630 </code></pre>
+</div>
+</div>
+<p>Now plot the tree:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fancyRpartPlot</span>(tree_model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree1_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>How do we interpret the tree?</p>
+<p><strong>(24% of 3rd class survived) (55% of our passengers are in 3rd class) (38% is total passenger survival rate)</strong></p>
+<p><strong>(47% of 2nd class survived) (21% of 2nd class make up our passenger class)</strong></p>
+<p><strong>(63% of 1st class survived) (24% of 1st class make up our passenger class )</strong></p>
+<p>An advantage of working with classificationt trees is that we can (largely) just “throw in” lots of potential predictor variables..</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>tree_model2 <span class="ot">=</span> <span class="fu">rpart</span>(Survived <span class="sc">~</span> ., <span class="at">data =</span> titanic_complete, <span class="at">method =</span> <span class="st">"class"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Plot:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fancyRpartPlot</span>(tree_model2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree1_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="classification-tree-performance" class="level2">
+<h2 class="anchored" data-anchor-id="classification-tree-performance">Classification Tree Performance</h2>
+<p>As we did with logistic regression, start by making predictions. Let’s compare our Pclass tree with the tree with all variables.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>treepred1 <span class="ot">=</span> <span class="fu">predict</span>(tree_model1, titanic_complete, <span class="at">type =</span> <span class="st">"class"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Fortunately, we can use a function to build our confusion matrix rather than having to do this manually as we did for logistic regression. Let’s talk our way through the confusion matrix and the other output.</p>
+</section>
+<section id="no-information-rate-naive-accuracy-how-many-will-be-get-right-if-we-assume-everyone-i-in-the-majority-dead-benchmark" class="level2">
+<h2 class="anchored" data-anchor-id="no-information-rate-naive-accuracy-how-many-will-be-get-right-if-we-assume-everyone-i-in-the-majority-dead-benchmark"><strong>No Information Rate = Naive Accuracy = how many will be get right if we assume everyone i in the majority, dead… (BENCHMARK)</strong></h2>
+</section>
+<section id="no-information-rate-naive-accuracy" class="level2">
+<h2 class="anchored" data-anchor-id="no-information-rate-naive-accuracy"><strong>61% No Information Rate = Naive Accuracy</strong></h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(treepred1,titanic_complete<span class="sc">$</span>Survived,<span class="at">positive=</span><span class="st">"Yes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction  No Yes
+       No  469 206
+       Yes  80 136
+                                          
+               Accuracy : 0.679           
+                 95% CI : (0.6472, 0.7096)
+    No Information Rate : 0.6162          
+    P-Value [Acc &gt; NIR] : 5.536e-05       
+                                          
+                  Kappa : 0.2707          
+                                          
+ Mcnemar's Test P-Value : 1.453e-13       
+                                          
+            Sensitivity : 0.3977          
+            Specificity : 0.8543          
+         Pos Pred Value : 0.6296          
+         Neg Pred Value : 0.6948          
+             Prevalence : 0.3838          
+         Detection Rate : 0.1526          
+   Detection Prevalence : 0.2424          
+      Balanced Accuracy : 0.6260          
+                                          
+       'Positive' Class : Yes             
+                                          </code></pre>
+</div>
+</div>
+<p>Let’s compare to the larger tree model:</p>
+<p><strong>sensitivity and specificity (positive =“Yes”)</strong></p>
+<p><strong>Accurate 85%</strong></p>
+<p><strong>Naive/No Information Rate = function of the data, not the model</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>treepred2 <span class="ot">=</span> <span class="fu">predict</span>(tree_model2, titanic_complete, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(treepred2,titanic_complete<span class="sc">$</span>Survived, <span class="at">positive=</span><span class="st">"Yes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction  No Yes
+       No  498  84
+       Yes  51 258
+                                          
+               Accuracy : 0.8485          
+                 95% CI : (0.8232, 0.8714)
+    No Information Rate : 0.6162          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.6737          
+                                          
+ Mcnemar's Test P-Value : 0.005885        
+                                          
+            Sensitivity : 0.7544          
+            Specificity : 0.9071          
+         Pos Pred Value : 0.8350          
+         Neg Pred Value : 0.8557          
+             Prevalence : 0.3838          
+         Detection Rate : 0.2896          
+   Detection Prevalence : 0.3468          
+      Balanced Accuracy : 0.8307          
+                                          
+       'Positive' Class : Yes             
+                                          </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
