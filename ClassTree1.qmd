@@ -1,0 +1,180 @@
+## Classification Trees - Part 1
+
+```{r}
+#| include: false 
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+library(rpart) #for classification trees
+library(RColorBrewer) #better visualization of classification trees
+library(rattle) #better visualization of classification trees
+library(caret) #for splitting and management of model building
+```
+
+## Classification Trees
+
+A classification tree is a type of predictive model used to sorting data into classes. In the context of binary classification, the goal is to partition data into two groups based on input features (variables). Classification trees are intuitive, easy to visualize, and widely used in various fields such as finance, healthcare, and marketing.
+
+```{r}
+#| echo: false
+bank = read_csv("Bank_Example.csv") %>% mutate(Default = as_factor(Default))
+```
+
+```{r}
+ggplot(bank,aes(x=Age,y=Income,colour=Default)) + geom_point(size=5) + theme_bw()
+```
+
+Can we develop "splits" (cuts) that would separate the "Yes" dots from the "No" dots? Our splits will take the form of horizontal or vertical lines. The splits are "recursive". This means that the lines cannot cross each other.
+
+Do you see a place where we could draw a horizontal or vertical line that would best separate red and blue dots?
+
+How about a vertical line at Age = 42.5 (or so)?
+
+```{r}
+ggplot(bank,aes(x=Age,y=Income,colour=Default)) + geom_point(size=5) + theme_bw() + 
+  geom_vline(xintercept = 42.5)
+```
+
+How "pure" is the partition to the right of this new line? **1**
+
+Where could we draw another line (could be horizontal or vertical) to continue to partition the data?
+
+How about Income = 55?
+
+```{r}
+ggplot(bank,aes(x=Age,y=Income,colour=Default)) + geom_point(size=5) + theme_bw() + 
+  geom_vline(xintercept = 42.5) + 
+  geom_segment(aes(x = 25, y = 55, xend = 42.5, yend = 55), color="black") 
+```
+
+One more partition should do it...
+
+```{r}
+ggplot(bank,aes(x=Age,y=Income,colour=Default)) + geom_point(size=5) + theme_bw() + 
+  geom_vline(xintercept = 42.5) + 
+  geom_segment(aes(x = 25, y = 55, xend = 42.5, yend = 55), color="black") +
+  geom_segment(aes(x = 27.5, y = 40, xend = 27.5, yend = 55), color="black") 
+```
+
+We've now created four "perfectly pure" partitions. How do we use these partitions to make predictions?
+
+What would we predict for Age of 35 and Income of 50?
+
+How about Age of 32 and Income of 65?
+
+Let's see what the tree would look like as it is built out split by split.
+
+NOTE: At each split, we move to the LEFT if the condition is TRUE and to the RIGHT if the condition is FALSE!
+
+------------------------------------------------------------------------
+
+DRAW BY HAND
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+
+Here we conducted splits of our data until we achieved perfect purity (i.e., all partitions contain dots of a single color only). In reality, this rarely happens. We could even have two points of different classes (colors) sitting directly on top of each other :) A question should be: When do we stop splitting? Why should we stop splitting (i.e., why not try as hard as possible to generate perfect partitions)?
+
+We utilize criteria that stop the growth of our trees in order to prevent **overfitting**! Overfitting refers to the phenomenon where our model works very well on the data that we built the model with, but generalizes poorly to new data.
+
+REASONABLE RULE OF THUMB: Less complex trees are less likely to overfit! Try to build a tree complex enough to describe what's happening in the data, but not so complex as to likely overfit!
+
+There are a couple of common criteria that we can utilize to control tree growth:
+
+-   **Maximum depth** - Stop growing the tree after it reaches a certain depth.
+
+-   **Minimum split size** - Stop splitting if the number of observations in a branch are below a certain threshold.
+
+-   **Purity gain** - Stop splitting if the split does not provide "enough" improvement to purity (over some threshold). NOTE: This is the approach that the "rpart" package in R uses by default.
+
+Hopefully this seems relatively straightforward :) It is pretty easy to visualize when you only have two predictor variables and the data for those two variables is already pretty separated. Things become much more complex when the there are more than two predictors and the data is more realistic. For this, we turn to the "rpart" package from R.
+
+## Data Loading, Cleaning, and Preparation
+
+Load the dataset
+
+```{r}
+titanic = titanic::titanic_train
+```
+
+Clean and prep work (as usual)
+
+```{r}
+# factor conversion and recoding
+titanic = titanic %>% mutate(Survived = as_factor(Survived)) %>% 
+  mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
+  mutate(Pclass = as_factor(Pclass)) %>% mutate(Sex = as_factor(Sex)) %>%
+  select(-PassengerId, -Name, -Ticket, -Fare, -Cabin, -Embarked)
+
+# imputation
+set.seed(1234) #sets seed for random number generator
+imp_age = mice(titanic, m=5, method='pmm', printFlag=FALSE)
+#m is the number of imputations, 5 is a reasonable value as a default
+#pmm is "predictive mean matching" = imputation method for numeric data
+#printFlag reduces amount of output
+
+titanic_complete = complete(imp_age) 
+
+# view the cleaned and prepared data
+summary(titanic_complete)
+```
+
+## Building Classification Trees
+
+Let's build a simple classification tree using only "Pclass" to predict "Survived". How do we expect that this tree will "split" on the Pclass variable?
+
+```{r}
+tree_model1 = rpart(Survived ~ Pclass, data = titanic_complete, method = "class")
+```
+
+Let's take a look at the summary of the model. We'll discuss the interpretation of this in more detail later.
+
+```{r}
+summary(tree_model1)
+```
+
+Now plot the tree:
+
+```{r}
+fancyRpartPlot(tree_model1)
+```
+
+How do we interpret the tree?
+
+An advantage of working with classificationt trees is that we can (largely) just "throw in" lots of potential predictor variables..
+
+```{r}
+tree_model2 = rpart(Survived ~ ., data = titanic_complete, method = "class")
+```
+
+Plot:
+
+```{r}
+fancyRpartPlot(tree_model2)
+```
+
+## Classification Tree Performance
+
+As we did with logistic regression, start by making predictions. Let's compare our Pclass tree with the tree with all variables.
+
+```{r}
+treepred1 = predict(tree_model1, titanic_complete, type = "class")
+```
+
+Fortunately, we can use a function to build our confusion matrix rather than having to do this manually as we did for logistic regression. Let's talk our way through the confusion matrix and the other output.
+
+```{r}
+confusionMatrix(treepred1,titanic_complete$Survived,positive="Yes")
+```
+
+Let's compare to the larger tree model:
+
+```{r}
+treepred2 = predict(tree_model2, titanic_complete, type = "class")
+confusionMatrix(treepred2,titanic_complete$Survived,positive="Yes")
+```

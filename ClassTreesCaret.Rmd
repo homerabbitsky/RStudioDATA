@@ -1,0 +1,95 @@
+## Classification Trees
+
+```{r}
+options(tidyverse.quiet = TRUE)
+library(titanic)
+library(tidyverse)
+library(mice) #package for imputation
+library(VIM) #visualizing missingness
+library(rpart) #for classification trees
+library(RColorBrewer) #better visualization of classification trees
+library(rattle) #better visualization of classification trees
+library(caret) #for splitting and management of model building
+```
+
+Read in dataset
+
+```{r}
+titanic = titanic::titanic_train
+```
+
+Structure and summary
+
+```{r}
+str(titanic)
+summary(titanic)
+```
+
+Factor conversion and recoding (Always do this prior to splitting)
+
+```{r}
+titanic = titanic %>% mutate(Survived = as.factor(Survived)) %>% 
+  mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
+  mutate(Pclass = as.factor(Pclass)) %>% mutate(Sex = as.factor(Sex)) %>%
+  mutate(Embarked = as.factor(Embarked)) %>% 
+  mutate(Embarked = fct_recode(Embarked,"Unknown"="","Cherbourg"="C","Southampton"="S","Queenstown"="Q"))
+
+titanic$Cabin[titanic$Cabin==""] = NA #convert blanks in cabin to NA
+
+str(titanic)
+```
+
+Column-wise deletion of the "Cabin" variable (As with factor conversion/recoding, do this before splitting).
+
+```{r}
+titanic = titanic %>% select(-Cabin) 
+vim_plot = aggr(titanic, numbers = TRUE, prop = c(TRUE, FALSE),cex.axis=.7)
+```
+
+```{r}
+#select only variables relevant to our analysis
+titanic = titanic %>% select(c("Survived","Pclass","Sex","Age","SibSp","Parch","Embarked"))
+
+imp_age = mice(titanic, m=1, method='pmm', printFlag=FALSE)
+summary(imp_age)
+```
+
+Merge the imputed values into our titanic data frame. Imputation is part of the data cleaning process and should occur prior to splitting.
+
+```{r}
+titanic_complete = complete(imp_age) 
+summary(titanic_complete)
+```
+
+Splitting.
+
+```{r}
+set.seed(123) 
+train.rows = createDataPartition(y = titanic_complete$Survived, p=0.7, list = FALSE) #70% in training
+train = titanic_complete[train.rows,] 
+test = titanic_complete[-train.rows,]
+```
+
+Now that we have the split data, let's build a classification tree. Here we use caret to manage the model building.
+
+```{r}
+fit_control = trainControl(method = "cv",  
+                           number = 10) #set up 10 fold cross-validation
+
+set.seed(123)  
+rpart_fit = train(x=titanic_complete[,-1], y=titanic_complete$Survived,
+                 method = "rpart", 
+                 trControl = fit_control)
+#notice exclusion of "data = " line in block of code above. Not needed as data is explicitly indicated via non-formula interface
+```
+
+```{r}
+rpart_fit #displays the model (do not use summary as we have done before)
+#caret automatically chooses the optima value for cp. We do NOT need to prune
+```
+
+Plotting the tree.
+
+```{r}
+fancyRpartPlot(rpart_fit$finalModel) #note the code to show the resulting, final tree
+```
