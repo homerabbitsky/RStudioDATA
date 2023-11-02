@@ -1,0 +1,202 @@
+## Classification Trees - Part 2
+
+```{r}
+#| include: false 
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+library(rpart) #for classification trees
+library(RColorBrewer) #better visualization of classification trees
+library(rattle) #better visualization of classification trees
+library(caret) #management of model building
+library(tidymodels) #management of model building
+library(formattable) #pretty tables
+```
+
+### Model Validation
+
+How do we know if a predictive model that we build is actually any good?
+
+What if we could "simulate" the existence of new/unseen data in order to test our model? We can do this by splitting the data into two sets: a **training set** and a **testing set**.
+
+![](train_test.png){width="509"}
+
+The training set is used to develop the model, allowing it to learn and adapt to the patterns in the data. This is where the model tries to understand the relationships between input features and the target variable.
+
+The testing set acts as a new, unseen data set for the model. It's used to evaluate the model's performance and generalization capabilities. By applying the model to the testing set, we can measure how well it has learned and how it performs on data it hasn't encountered before. This separation into training and testing sets helps in **preventing overfitting**, ensuring that the model is robust and performs well on new, unseen data.
+
+RULE OF THUMB: We put 70-80% of our data in the training set and the remainder in the testing set. If we have a very large dataset it may be OK to put less data in the testing set (i.e., 10% or so).
+
+BIG NOTE: Only build models on the training set!!! Never on the testing set!!!
+
+#### Workflow
+
+Load Data --\> Clean/Prepare --\> Split --\> Visualize (on Training Data) --\> Build Models (on Training Data) --\> Select Best Model(s) --\> Evaluate on Testing Set
+
+#### Data Loading, Cleaning, and Preparation
+
+Load the dataset
+
+```{r}
+titanic = titanic::titanic_train
+```
+
+Clean and prep work (as usual)
+
+```{r}
+# factor conversion and recoding
+titanic = titanic %>% mutate(Survived = as_factor(Survived)) %>% 
+  mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
+  mutate(Pclass = as_factor(Pclass)) %>% mutate(Sex = as_factor(Sex)) %>%
+  select(-PassengerId, -Name, -Ticket, -Fare, -Cabin, -Embarked)
+
+# imputation
+set.seed(1234) #sets seed for random number generator
+imp_age = mice(titanic, m=5, method='pmm', printFlag=FALSE)
+#m is the number of imputations, 5 is a reasonable value as a default
+#pmm is "predictive mean matching" = imputation method for numeric data
+#printFlag reduces amount of output
+
+titanic_complete = complete(imp_age) 
+
+# view the cleaned and prepared data
+summary(titanic_complete)
+```
+
+#### Model Validation
+
+```{r}
+set.seed(123) #ensures we all get the same splits
+titanic_split = initial_split(titanic_complete, prop = 0.7, strata = Survived) #70% in training
+train = training(titanic_split) 
+test = testing(titanic_split)
+```
+
+#### Building Classification Trees
+
+Build our classification tree from before (all variables as potential predictors) on the TRAINING set.
+
+```{r}
+tree_model1 = rpart(Survived ~ ., data = train, method = "class")
+```
+
+Plot:
+
+```{r}
+fancyRpartPlot(tree_model1)
+```
+
+#### Classification Tree Performance
+
+We evaluate model performance on the training set first. Be sure that you have the correct data frame name in your predict and confusionMatrix functions! Also, pay attention to the value for "positive".
+
+```{r}
+treepred_train = predict(tree_model1, train, type = "class")
+```
+
+```{r}
+confusionMatrix(treepred_train,train$Survived,positive="Yes")
+```
+
+If we are happy with model performance on the training set, we can then consider this to be our "best" model and move on to evaluate performance on the testing set. As before, be very careful to use the correct data frame names in your code.
+
+```{r}
+treepred_test = predict(tree_model1, test, type = "class")
+confusionMatrix(treepred_test,test$Survived,positive="Yes")
+```
+
+On the training set we experienced an accuracy of: **84.43%**. This dropped to **79.48%** on the testing set. This is VERY typical. Is this drop-off in accuracy too much?
+
+------------------------------------------------------------------------
+
+For comparison, let's look at our logistic regression model and see how the performance of that model stacks up to our tree.
+
+We'll build our logistic regression model on the training set.
+
+```{r}
+log_model1 = glm(Survived ~., train, family = "binomial")
+summary(log_model1)
+```
+
+Remove Parch because it's not significant (notice the use of -Parch to remove this variable from the list of all variables):
+
+```{r}
+log_model2 = glm(Survived ~.-Parch, train, family = "binomial")
+summary(log_model2)
+```
+
+Develop predictions on the training set:
+
+```{r}
+logpred_train = predict(log_model2, type = "response")
+```
+
+These are probabilities that we now need to convert to classes (using a probability threshold). We have code (from a previous lecture) to help us find the threshold that this best to maximize accuracy (as before, be careful with names of objects):
+
+```{r}
+pred = prediction(logpred_train, train$Survived)
+perf = performance(pred,"tpr","fpr")
+plot(perf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+
+# plot accuracy as function of threshold
+acc.perf = performance(pred, measure = "acc")
+plot(acc.perf)
+
+# find best threshold to maximize accuracy
+ind = which.max( slot(acc.perf, "y.values")[[1]] )
+acc = slot(acc.perf, "y.values")[[1]][ind]
+cutoff = slot(acc.perf, "x.values")[[1]][ind]
+print(c(accuracy= acc, cutoff = cutoff))
+```
+
+We get a best cutoff (threshold) of: 0.5625394 to maximize accuracy! We'll use this threshold on the training AND testing sets! Do not build models OR make new thresholds using the testing set data!!
+
+Let's check out (manually, unfortunately for logistic regression) our accuracy on the training set.
+
+```{r}
+table1 = table(logpred_train > 0.5625394, train$Survived)
+table1
+```
+
+Accuracy is then:
+
+```{r}
+(table1[1,1] + table1[2,2])/nrow(train)
+```
+
+Our logistic regression model has an accuracy of **83.31%** on the training set (this is competitive with the accuracy of our classification tree). Let's see what happens when we check out the accuracy on the testing set. Start by making predictions on the testing set and then develop a confusion matrix (using the same threshold!). DO NOT DEVELOP A NEW MODEL OR THRESHOLD USING THE TESTING DATA!! Be careful to add the "newdata" argument to the predict function!
+
+```{r}
+logpred_test = predict(log_model2, newdata=test, type = "response")
+```
+
+```{r}
+table2 = table(logpred_test > 0.5625394, test$Survived)
+table2
+```
+
+Accuracy on the testing set is then:
+
+```{r}
+(table2[1,1] + table2[2,2])/nrow(test)
+```
+
+Accuracy drops to **79.85%**. This is expected and typical.
+
+------------------------------------------------------------------------
+
+Let's make a "pretty" table of our results. We'll do this manually. First make a little data frame (actually a "tidyverse" tibble) to hold our content for the table:
+
+```{r}
+results = tibble(Model = c("Logistic Regression", "Classification Tree"),
+                     `Training Accuracy` = c("83.31%","84.43%"),
+                     `Testing Accuracy` = c("79.85%","79.48%"))
+```
+
+Insert the data frame into a table via the "formattable" package:
+
+```{r}
+formattable(results, align =c("c","c","c"))
+```

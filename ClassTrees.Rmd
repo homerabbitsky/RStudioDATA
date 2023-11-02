@@ -11,21 +11,17 @@ library(RColorBrewer) #better visualization of classification trees
 library(rattle) #better visualization of classification trees
 ```
 
-Read in dataset
-
+Read in dataset   
 ```{r}
 titanic = titanic::titanic_train
 ```
-
 Structure and summary
-
 ```{r}
 str(titanic)
 summary(titanic)
 ```
 
-Factor conversion and recoding
-
+Factor conversion and recoding  
 ```{r}
 titanic = titanic %>% mutate(Survived = as.factor(Survived)) %>% 
   mutate(Survived = fct_recode(Survived, "No" = "0", "Yes" = "1" )) %>%
@@ -38,8 +34,7 @@ titanic$Cabin[titanic$Cabin==""] = NA #convert blanks in cabin to NA
 str(titanic)
 ```
 
-Column-wise deletion of the "Cabin" variable.
-
+Column-wise deletion of the "Cabin" variable.  
 ```{r}
 titanic = titanic %>% select(-Cabin) 
 vim_plot = aggr(titanic, numbers = TRUE, prop = c(TRUE, FALSE),cex.axis=.7)
@@ -53,21 +48,26 @@ imp_age = mice(titanic, m=1, method='pmm', printFlag=FALSE)
 summary(imp_age)
 ```
 
-Merge the imputed values into our titanic data frame
-
+Merge the imputed values into our titanic data frame  
 ```{r}
 titanic_complete = complete(imp_age) 
 summary(titanic_complete)
 ```
 
-Now that we have the imputed/complete data, let's build a classification tree.
-
+Now that we have the imputed/complete data, let's build a classification tree.  
 ```{r}
 tree1 = rpart(Survived ~., titanic_complete, method="class")
 fancyRpartPlot(tree1)
 ```
-
 ```{r}
 printcp(tree1)
 plotcp(tree1)
 ```
+
+
+
+
+
+
+
+
