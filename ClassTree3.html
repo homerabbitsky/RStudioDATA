@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>classtree3</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="ClassTree3_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ClassTree3_files/libs/quarto-html/quarto.js"></script>
+<script src="ClassTree3_files/libs/quarto-html/popper.min.js"></script>
+<script src="ClassTree3_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ClassTree3_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ClassTree3_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ClassTree3_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ClassTree3_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ClassTree3_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ClassTree3_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+
+
+<section id="classification-trees---part-3" class="level2">
+<h2 class="anchored" data-anchor-id="classification-trees---part-3">Classification Trees - Part 3</h2>
+<p>BIG NOTE: Only build models on the training set!!! Never on the testing set!!!</p>
+<section id="workflow" class="level4">
+<h4 class="anchored" data-anchor-id="workflow">Workflow</h4>
+<p>Load Data –&gt; Clean/Prepare –&gt; Split –&gt; Visualize (on Training Data) –&gt; Build Models (on Training Data) –&gt; Select Best Model(s) –&gt; Evaluate on Testing Set</p>
+</section>
+<section id="data-loading-cleaning-and-preparation" class="level4">
+<h4 class="anchored" data-anchor-id="data-loading-cleaning-and-preparation">Data Loading, Cleaning, and Preparation</h4>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="churn.png" class="img-fluid figure-img" width="324"></p>
+<figcaption class="figure-caption">DALL-E 3 Image for “Create a flat art style cartoon to illustrate customers”churning” from a company” prompt</figcaption>
+</figure>
+</div>
+<p>Load the dataset</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>churn <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="st">"churn.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 7043 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (11): gender, Partner, Dependents, PhoneService, MultipleLines, Internet...
+dbl  (2): tenure, MonthlyCharges
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+</div>
+<p>This is a new dataset for us, so we need to our clean and prep work.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(churn)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>spc_tbl_ [7,043 × 13] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+ $ gender          : chr [1:7043] "Female" "Male" "Male" "Male" ...
+ $ Partner         : chr [1:7043] "Yes" "No" "No" "No" ...
+ $ Dependents      : chr [1:7043] "No" "No" "No" "No" ...
+ $ tenure          : num [1:7043] 1 34 2 45 2 8 22 10 28 62 ...
+ $ PhoneService    : chr [1:7043] "No" "Yes" "Yes" "No" ...
+ $ MultipleLines   : chr [1:7043] "No phone service" "No" "No" "No phone service" ...
+ $ InternetService : chr [1:7043] "DSL" "DSL" "DSL" "DSL" ...
+ $ OneMoreService  : chr [1:7043] "Yes" "Yes" "Yes" "Yes" ...
+ $ Contract        : chr [1:7043] "Month-to-month" "One year" "Month-to-month" "One year" ...
+ $ PaperlessBilling: chr [1:7043] "Yes" "No" "Yes" "No" ...
+ $ PaymentMethod   : chr [1:7043] "Electronic check" "Mailed check" "Mailed check" "Bank transfer (automatic)" ...
+ $ MonthlyCharges  : num [1:7043] 29.9 57 53.9 42.3 70.7 ...
+ $ Churn           : chr [1:7043] "No" "No" "Yes" "No" ...
+ - attr(*, "spec")=
+  .. cols(
+  ..   gender = col_character(),
+  ..   Partner = col_character(),
+  ..   Dependents = col_character(),
+  ..   tenure = col_double(),
+  ..   PhoneService = col_character(),
+  ..   MultipleLines = col_character(),
+  ..   InternetService = col_character(),
+  ..   OneMoreService = col_character(),
+  ..   Contract = col_character(),
+  ..   PaperlessBilling = col_character(),
+  ..   PaymentMethod = col_character(),
+  ..   MonthlyCharges = col_double(),
+  ..   Churn = col_character()
+  .. )
+ - attr(*, "problems")=&lt;externalptr&gt; </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(churn)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    gender            Partner           Dependents            tenure     
+ Length:7043        Length:7043        Length:7043        Min.   : 0.00  
+ Class :character   Class :character   Class :character   1st Qu.: 9.00  
+ Mode  :character   Mode  :character   Mode  :character   Median :29.00  
+                                                          Mean   :32.37  
+                                                          3rd Qu.:55.00  
+                                                          Max.   :72.00  
+ PhoneService       MultipleLines      InternetService    OneMoreService    
+ Length:7043        Length:7043        Length:7043        Length:7043       
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+   Contract         PaperlessBilling   PaymentMethod      MonthlyCharges  
+ Length:7043        Length:7043        Length:7043        Min.   : 18.25  
+ Class :character   Class :character   Class :character   1st Qu.: 35.50  
+ Mode  :character   Mode  :character   Mode  :character   Median : 70.35  
+                                                          Mean   : 64.76  
+                                                          3rd Qu.: 89.85  
+                                                          Max.   :118.75  
+    Churn          
+ Length:7043       
+ Class :character  
+ Mode  :character  
+                   
+                   
+                   </code></pre>
+</div>
+</div>
+<p>Clean and prep work (as usual)… churn v Churn is different</p>
+<p><strong>in console:</strong></p>
+<p><strong>table(train$Churn)</strong></p>
+<p><strong>#/nrow(train)</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># factor conversion </span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>churn <span class="ot">=</span> churn <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.character), as_factor))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(churn)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>tibble [7,043 × 13] (S3: tbl_df/tbl/data.frame)
+ $ gender          : Factor w/ 2 levels "Female","Male": 1 2 2 2 1 1 2 1 1 2 ...
+ $ Partner         : Factor w/ 2 levels "Yes","No": 1 2 2 2 2 2 2 2 1 2 ...
+ $ Dependents      : Factor w/ 2 levels "No","Yes": 1 1 1 1 1 1 2 1 1 2 ...
+ $ tenure          : num [1:7043] 1 34 2 45 2 8 22 10 28 62 ...
+ $ PhoneService    : Factor w/ 2 levels "No","Yes": 1 2 2 1 2 2 2 1 2 2 ...
+ $ MultipleLines   : Factor w/ 3 levels "No phone service",..: 1 2 2 1 2 3 3 1 3 2 ...
+ $ InternetService : Factor w/ 3 levels "DSL","Fiber optic",..: 1 1 1 1 2 2 2 1 2 1 ...
+ $ OneMoreService  : Factor w/ 2 levels "Yes","No": 1 1 1 1 1 1 1 1 1 1 ...
+ $ Contract        : Factor w/ 3 levels "Month-to-month",..: 1 2 1 2 1 1 1 1 1 2 ...
+ $ PaperlessBilling: Factor w/ 2 levels "Yes","No": 1 2 1 2 1 1 1 2 1 2 ...
+ $ PaymentMethod   : Factor w/ 4 levels "Electronic check",..: 1 2 2 3 1 1 4 2 1 3 ...
+ $ MonthlyCharges  : num [1:7043] 29.9 57 53.9 42.3 70.7 ...
+ $ Churn           : Factor w/ 2 levels "No","Yes": 1 1 2 1 2 2 1 1 2 1 ...</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">skim</span>(churn)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped small">
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">churn</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number of rows</td>
+<td style="text-align: left;">7043</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Number of columns</td>
+<td style="text-align: left;">13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">_______________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Column type frequency:</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">factor</td>
+<td style="text-align: left;">11</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">numeric</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">________________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Group variables</td>
+<td style="text-align: left;">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: factor</strong></p>
+<table class="table table-sm table-striped small">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 42%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: left;">ordered</th>
+<th style="text-align: right;">n_unique</th>
+<th style="text-align: left;">top_counts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">gender</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Mal: 3555, Fem: 3488</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Partner</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">No: 3641, Yes: 3402</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Dependents</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">No: 4933, Yes: 2110</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PhoneService</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Yes: 6361, No: 682</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">MultipleLines</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">No: 3390, Yes: 2971, No : 682</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">InternetService</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">Fib: 3096, DSL: 2421, No: 1526</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">OneMoreService</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Yes: 5001, No: 2042</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Contract</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: left;">Mon: 3875, Two: 1695, One: 1473</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">PaperlessBilling</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">Yes: 4171, No: 2872</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">PaymentMethod</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: left;">Ele: 2365, Mai: 1612, Ban: 1544, Cre: 1522</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Churn</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">FALSE</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: left;">No: 5174, Yes: 1869</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table class="table table-sm table-striped small">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 11%">
+<col style="width: 16%">
+<col style="width: 6%">
+<col style="width: 6%">
+<col style="width: 6%">
+<col style="width: 5%">
+<col style="width: 6%">
+<col style="width: 6%">
+<col style="width: 8%">
+<col style="width: 6%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">p0</th>
+<th style="text-align: right;">p25</th>
+<th style="text-align: right;">p50</th>
+<th style="text-align: right;">p75</th>
+<th style="text-align: right;">p100</th>
+<th style="text-align: left;">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">tenure</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">32.37</td>
+<td style="text-align: right;">24.56</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">9.0</td>
+<td style="text-align: right;">29.00</td>
+<td style="text-align: right;">55.00</td>
+<td style="text-align: right;">72.00</td>
+<td style="text-align: left;">▇▃▃▃▆</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">MonthlyCharges</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">64.76</td>
+<td style="text-align: right;">30.09</td>
+<td style="text-align: right;">18.25</td>
+<td style="text-align: right;">35.5</td>
+<td style="text-align: right;">70.35</td>
+<td style="text-align: right;">89.85</td>
+<td style="text-align: right;">118.75</td>
+<td style="text-align: left;">▇▅▆▇▅</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>No apparent missingness. Next step is then to split the dataset.</p>
+</section>
+<section id="model-validation" class="level4">
+<h4 class="anchored" data-anchor-id="model-validation">Model Validation</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>) <span class="co">#ensures we all get the same splits</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>churn_split <span class="ot">=</span> <span class="fu">initial_split</span>(churn, <span class="at">prop =</span> <span class="fl">0.7</span>, <span class="at">strata =</span> Churn) <span class="co">#70% in training</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>train <span class="ot">=</span> <span class="fu">training</span>(churn_split) </span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>test <span class="ot">=</span> <span class="fu">testing</span>(churn_split)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="visualization" class="level4">
+<h4 class="anchored" data-anchor-id="visualization">Visualization</h4>
+<p>Don’t skip this step :) Do your visualization work on the training set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>gender,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>Partner,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>Dependents,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(Dependents, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> Dependents        No       Yes
+         No 0.6887533 0.3112467
+        Yes 0.8407258 0.1592742</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>Churn,<span class="at">y=</span>tenure)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>PhoneService,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(PhoneService, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> PhoneService        No       Yes
+           No 0.7564103 0.2435897
+          Yes 0.7323470 0.2676530</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>MultipleLines,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(MultipleLines, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    MultipleLines        No       Yes
+ No phone service 0.7564103 0.2435897
+               No 0.7524958 0.2475042
+              Yes 0.7087992 0.2912008</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>InternetService,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(InternetService, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> InternetService        No       Yes
+             DSL 0.8093546 0.1906454
+     Fiber optic 0.5815242 0.4184758
+              No 0.9255814 0.0744186</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>OneMoreService,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(OneMoreService, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> OneMoreService        No       Yes
+            Yes 0.6992847 0.3007153
+             No 0.8207810 0.1792190</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>Contract,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>PaperlessBilling,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(PaperlessBilling, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> PaperlessBilling        No       Yes
+              Yes 0.6665518 0.3334482
+               No 0.8321816 0.1678184</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>PaymentMethod,<span class="at">fill=</span>Churn)) <span class="sc">+</span> <span class="fu">geom_bar</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>train <span class="sc">%&gt;%</span> <span class="fu">tabyl</span>(PaymentMethod, Churn) <span class="sc">%&gt;%</span> <span class="fu">adorn_percentages</span>(<span class="st">"row"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>             PaymentMethod        No       Yes
+          Electronic check 0.5437424 0.4562576
+              Mailed check 0.8060230 0.1939770
+ Bank transfer (automatic) 0.8387681 0.1612319
+   Credit card (automatic) 0.8476190 0.1523810</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(train,<span class="fu">aes</span>(<span class="at">x=</span>Churn,<span class="at">y=</span>MonthlyCharges)) <span class="sc">+</span> <span class="fu">geom_boxplot</span>() <span class="sc">+</span> <span class="fu">theme_bw</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="building-classification-trees" class="level4">
+<h4 class="anchored" data-anchor-id="building-classification-trees">Building Classification Trees</h4>
+<p>Build our classification tree from before (all variables as potential predictors) on the TRAINING set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>tree_model1 <span class="ot">=</span> <span class="fu">rpart</span>(Churn <span class="sc">~</span> ., <span class="at">data =</span> train, <span class="at">method =</span> <span class="st">"class"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Plot:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fancyRpartPlot</span>(tree_model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Based on this tree, what should the company do to try to prevent customers from churning?</p>
+<p><strong>add incentive to those re-newing their contract and/or month to month</strong></p>
+</section>
+<section id="classification-tree-performance" class="level4">
+<h4 class="anchored" data-anchor-id="classification-tree-performance">Classification Tree Performance</h4>
+<p>We evaluate model performance on the training set first. Be sure that you have the correct data frame name in your predict and confusionMatrix functions! Also, pay attention to the value for “positive”.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>treepred_train <span class="ot">=</span> <span class="fu">predict</span>(tree_model1, train, <span class="at">type =</span> <span class="st">"class"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(treepred_train,train<span class="sc">$</span>Churn,<span class="at">positive=</span><span class="st">"Yes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   No  Yes
+       No  3290  665
+       Yes  331  643
+                                          
+               Accuracy : 0.7979          
+                 95% CI : (0.7864, 0.8091)
+    No Information Rate : 0.7346          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.4357          
+                                          
+ Mcnemar's Test P-Value : &lt; 2.2e-16       
+                                          
+            Sensitivity : 0.4916          
+            Specificity : 0.9086          
+         Pos Pred Value : 0.6602          
+         Neg Pred Value : 0.8319          
+             Prevalence : 0.2654          
+         Detection Rate : 0.1305          
+   Detection Prevalence : 0.1976          
+      Balanced Accuracy : 0.7001          
+                                          
+       'Positive' Class : Yes             
+                                          </code></pre>
+</div>
+</div>
+<p>How do we feel about the performance of this model?</p>
+<p><strong>sensitivity: identities the positives (someone who churns)</strong></p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>treepred_test <span class="ot">=</span> <span class="fu">predict</span>(tree_model1, test, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(treepred_test,test<span class="sc">$</span>Churn,<span class="at">positive=</span><span class="st">"Yes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   No  Yes
+       No  1399  293
+       Yes  154  268
+                                          
+               Accuracy : 0.7886          
+                 95% CI : (0.7705, 0.8058)
+    No Information Rate : 0.7346          
+    P-Value [Acc &gt; NIR] : 5.261e-09       
+                                          
+                  Kappa : 0.4111          
+                                          
+ Mcnemar's Test P-Value : 6.702e-11       
+                                          
+            Sensitivity : 0.4777          
+            Specificity : 0.9008          
+         Pos Pred Value : 0.6351          
+         Neg Pred Value : 0.8268          
+             Prevalence : 0.2654          
+         Detection Rate : 0.1268          
+   Detection Prevalence : 0.1996          
+      Balanced Accuracy : 0.6893          
+                                          
+       'Positive' Class : Yes             
+                                          </code></pre>
+</div>
+</div>
+<p>On the training set we experienced an accuracy of: <strong>79.79%</strong>. This dropped to <strong>78.86%</strong> on the testing set. We are not overfitting, but what concerns might we have?</p>
+<p><strong>sensitivity is a concern, adjust the threshold …we only have weights for these trees … ratio the cost of a “yes” v “no”</strong></p>
+<hr>
+<p>Sensitivity is probably a concern!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>weights <span class="ot">=</span> <span class="fu">ifelse</span>(train<span class="sc">$</span>Churn <span class="sc">==</span> <span class="st">"Yes"</span>, <span class="dv">5</span>, <span class="dv">1</span>)</span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Now fit the rpart model</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>wt_mod <span class="ot">=</span> <span class="fu">rpart</span>(Churn <span class="sc">~</span> ., train, <span class="at">method =</span> <span class="st">"class"</span>, <span class="at">weights =</span> weights)</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the tree</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="fu">fancyRpartPlot</span>(wt_mod)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-24-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>Based on this tree, what should the company do to try to prevent customers from churning?</p>
+<p>Examine the performance of this model:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>wttreepred_train <span class="ot">=</span> <span class="fu">predict</span>(wt_mod, train, <span class="at">type =</span> <span class="st">"class"</span>)</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">confusionMatrix</span>(wttreepred_train,train<span class="sc">$</span>Churn,<span class="at">positive=</span><span class="st">"Yes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   No  Yes
+       No  2070  141
+       Yes 1551 1167
+                                        
+               Accuracy : 0.6567        
+                 95% CI : (0.6433, 0.67)
+    No Information Rate : 0.7346        
+    P-Value [Acc &gt; NIR] : 1             
+                                        
+                  Kappa : 0.3451        
+                                        
+ Mcnemar's Test P-Value : &lt;2e-16        
+                                        
+            Sensitivity : 0.8922        
+            Specificity : 0.5717        
+         Pos Pred Value : 0.4294        
+         Neg Pred Value : 0.9362        
+             Prevalence : 0.2654        
+         Detection Rate : 0.2368        
+   Detection Prevalence : 0.5514        
+      Balanced Accuracy : 0.7319        
+                                        
+       'Positive' Class : Yes           
+                                        </code></pre>
+</div>
+</div>
+<p>How do we feel about this model?</p>
+<p><strong>enhanced the model’s accuracy &amp; specificity.</strong></p>
+<hr>
+<p>For comparison, let’s look at a logistic regression model and see how the performance of that model stacks up to our tree.</p>
+<p>We’ll build our logistic regression model on the training set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>log_model1 <span class="ot">=</span> <span class="fu">glm</span>(Churn <span class="sc">~</span>., train, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(log_model1)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = Churn ~ ., family = "binomial", data = train)
+
+Coefficients: (1 not defined because of singularities)
+                                        Estimate Std. Error z value Pr(&gt;|z|)
+(Intercept)                            -0.058413   0.243046  -0.240 0.810070
+genderMale                             -0.068136   0.077042  -0.884 0.376481
+PartnerNo                               0.078554   0.091514   0.858 0.390681
+DependentsYes                          -0.096740   0.104360  -0.927 0.353935
+tenure                                 -0.035153   0.002749 -12.787  &lt; 2e-16
+PhoneServiceYes                        -0.603508   0.200855  -3.005 0.002658
+MultipleLinesNo                        -0.294337   0.096459  -3.051 0.002278
+MultipleLinesYes                              NA         NA      NA       NA
+InternetServiceFiber optic              0.713040   0.168544   4.231 2.33e-05
+InternetServiceNo                      -0.271494   0.222097  -1.222 0.221553
+OneMoreServiceNo                        0.136639   0.140708   0.971 0.331510
+ContractOne year                       -0.835679   0.129486  -6.454 1.09e-10
+ContractTwo year                       -1.679977   0.206828  -8.123 4.56e-16
+PaperlessBillingNo                     -0.304757   0.087937  -3.466 0.000529
+PaymentMethodMailed check              -0.375331   0.112819  -3.327 0.000878
+PaymentMethodBank transfer (automatic) -0.438255   0.111957  -3.914 9.06e-05
+PaymentMethodCredit card (automatic)   -0.467506   0.116253  -4.021 5.78e-05
+MonthlyCharges                          0.014583   0.004887   2.984 0.002846
+                                          
+(Intercept)                               
+genderMale                                
+PartnerNo                                 
+DependentsYes                             
+tenure                                 ***
+PhoneServiceYes                        ** 
+MultipleLinesNo                        ** 
+MultipleLinesYes                          
+InternetServiceFiber optic             ***
+InternetServiceNo                         
+OneMoreServiceNo                          
+ContractOne year                       ***
+ContractTwo year                       ***
+PaperlessBillingNo                     ***
+PaymentMethodMailed check              ***
+PaymentMethodBank transfer (automatic) ***
+PaymentMethodCredit card (automatic)   ***
+MonthlyCharges                         ** 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 5703.8  on 4928  degrees of freedom
+Residual deviance: 4138.8  on 4912  degrees of freedom
+AIC: 4172.8
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+</div>
+<p>Remove the insignificant variables and the MultipleLines variable (it’s a perfect linear combination of the Contract, PhoneService, and InternetService variables).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>log_model2 <span class="ot">=</span> <span class="fu">glm</span>(Churn <span class="sc">~</span>.<span class="sc">-</span>gender<span class="sc">-</span>Partner<span class="sc">-</span>Dependents<span class="sc">-</span>OneMoreService<span class="sc">-</span>MultipleLines, train, <span class="at">family =</span> <span class="st">"binomial"</span>)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(log_model2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+glm(formula = Churn ~ . - gender - Partner - Dependents - OneMoreService - 
+    MultipleLines, family = "binomial", data = train)
+
+Coefficients:
+                                        Estimate Std. Error z value Pr(&gt;|z|)
+(Intercept)                            -0.097939   0.196761  -0.498 0.618657
+tenure                                 -0.034388   0.002629 -13.079  &lt; 2e-16
+PhoneServiceYes                        -0.843075   0.171847  -4.906 9.30e-07
+InternetServiceFiber optic              0.730959   0.155748   4.693 2.69e-06
+InternetServiceNo                      -0.135105   0.215699  -0.626 0.531081
+ContractOne year                       -0.887683   0.128138  -6.928 4.28e-12
+ContractTwo year                       -1.724303   0.205147  -8.405  &lt; 2e-16
+PaperlessBillingNo                     -0.322895   0.087655  -3.684 0.000230
+PaymentMethodMailed check              -0.391083   0.112323  -3.482 0.000498
+PaymentMethodBank transfer (automatic) -0.446380   0.111529  -4.002 6.27e-05
+PaymentMethodCredit card (automatic)   -0.473051   0.115737  -4.087 4.36e-05
+MonthlyCharges                          0.016182   0.004213   3.841 0.000122
+                                          
+(Intercept)                               
+tenure                                 ***
+PhoneServiceYes                        ***
+InternetServiceFiber optic             ***
+InternetServiceNo                         
+ContractOne year                       ***
+ContractTwo year                       ***
+PaperlessBillingNo                     ***
+PaymentMethodMailed check              ***
+PaymentMethodBank transfer (automatic) ***
+PaymentMethodCredit card (automatic)   ***
+MonthlyCharges                         ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 5703.8  on 4928  degrees of freedom
+Residual deviance: 4153.5  on 4917  degrees of freedom
+AIC: 4177.5
+
+Number of Fisher Scoring iterations: 6</code></pre>
+</div>
+</div>
+<p>Based on this model, what should the company do to try to prevent customers from churning?</p>
+<p>Develop predictions on the training set:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>logpred_train <span class="ot">=</span> <span class="fu">predict</span>(log_model2, <span class="at">type =</span> <span class="st">"response"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>These are probabilities that we now need to convert to classes (using a probability threshold). We have code (from a previous lecture) to help us find the threshold that this best to maximize accuracy (as before, be careful with names of objects):</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>pred <span class="ot">=</span> <span class="fu">prediction</span>(logpred_train, train<span class="sc">$</span>Churn)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>perf <span class="ot">=</span> <span class="fu">performance</span>(pred,<span class="st">"tpr"</span>,<span class="st">"fpr"</span>)</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(perf, <span class="at">colorize=</span><span class="cn">TRUE</span>, <span class="at">print.cutoffs.at=</span><span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="at">by=</span><span class="fl">0.1</span>), <span class="at">text.adj=</span><span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.2</span>,<span class="fl">1.7</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-29-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot accuracy as function of threshold</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>acc.perf <span class="ot">=</span> <span class="fu">performance</span>(pred, <span class="at">measure =</span> <span class="st">"acc"</span>)</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(acc.perf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="ClassTree3_files/figure-html/unnamed-chunk-29-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># find best threshold to maximize accuracy</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>ind <span class="ot">=</span> <span class="fu">which.max</span>( <span class="fu">slot</span>(acc.perf, <span class="st">"y.values"</span>)[[<span class="dv">1</span>]] )</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">=</span> <span class="fu">slot</span>(acc.perf, <span class="st">"y.values"</span>)[[<span class="dv">1</span>]][ind]</span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>cutoff <span class="ot">=</span> <span class="fu">slot</span>(acc.perf, <span class="st">"x.values"</span>)[[<span class="dv">1</span>]][ind]</span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">c</span>(<span class="at">accuracy=</span> acc, <span class="at">cutoff =</span> cutoff))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   accuracy cutoff.4723 
+  0.8013796   0.5445417 </code></pre>
+</div>
+</div>
+<p>We get a best cutoff (threshold) of: 0.5445417 to maximize accuracy! We’ll use this threshold on the training AND testing sets! Do not build models OR make new thresholds using the testing set data!!</p>
+<p>Let’s check out (manually, unfortunately for logistic regression) our accuracy on the training set.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>table1 <span class="ot">=</span> <span class="fu">table</span>(logpred_train <span class="sc">&gt;</span> <span class="fl">0.5445417</span>, train<span class="sc">$</span>Churn)</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>table1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       
+          No  Yes
+  FALSE 3318  676
+  TRUE   303  632</code></pre>
+</div>
+</div>
+<p>Accuracy is then:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>(table1[<span class="dv">1</span>,<span class="dv">1</span>] <span class="sc">+</span> table1[<span class="dv">2</span>,<span class="dv">2</span>])<span class="sc">/</span><span class="fu">nrow</span>(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.8013796</code></pre>
+</div>
+</div>
+<p>Our logistic regression model has an accuracy of <strong>80.14%</strong> on the training set (this is competitive with the accuracy of our classification tree).</p>
+<p>We know sensitivity is important for this model, how does our logistic regression model perform?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>table1[<span class="dv">2</span>,<span class="dv">2</span>]<span class="sc">/</span>(table1[<span class="dv">2</span>,<span class="dv">1</span>] <span class="sc">+</span> table1[<span class="dv">2</span>,<span class="dv">2</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.6759358</code></pre>
+</div>
+</div>
+<p>Sensitivity is 67.59%. This is better than the sensitivity that we experienced with the classification tree.</p>
+<p>Let’s see what happens when we check out performance on the testing set. Start by making predictions on the testing set and then develop a confusion matrix (using the same threshold!). DO NOT DEVELOP A NEW MODEL OR THRESHOLD USING THE TESTING DATA!! Be careful to add the “newdata” argument to the predict function!</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb62"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a>logpred_test <span class="ot">=</span> <span class="fu">predict</span>(log_model2, <span class="at">newdata=</span>test, <span class="at">type =</span> <span class="st">"response"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>table2 <span class="ot">=</span> <span class="fu">table</span>(logpred_test <span class="sc">&gt;</span> <span class="fl">0.5445417</span> , test<span class="sc">$</span>Churn)</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>table2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       
+          No  Yes
+  FALSE 1434  303
+  TRUE   119  258</code></pre>
+</div>
+</div>
+<p>Accuracy on the testing set is then:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>(table2[<span class="dv">1</span>,<span class="dv">1</span>] <span class="sc">+</span> table2[<span class="dv">2</span>,<span class="dv">2</span>])<span class="sc">/</span><span class="fu">nrow</span>(test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.8003784</code></pre>
+</div>
+</div>
+<p>Accuracy drops to <strong>80.03%</strong>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>table2[<span class="dv">2</span>,<span class="dv">2</span>]<span class="sc">/</span>(table2[<span class="dv">2</span>,<span class="dv">1</span>] <span class="sc">+</span> table2[<span class="dv">2</span>,<span class="dv">2</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.6843501</code></pre>
+</div>
+</div>
+<p>Sensitivity is 68.43%.</p>
+<p><strong>What do we do?</strong></p>
+<hr>
+<p>Let’s make a “pretty” table of our results. We’ll do this manually. First make a little data frame (actually a “tidyverse” tibble) to hold our content for the table:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>results <span class="ot">=</span> <span class="fu">tibble</span>(<span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"Logistic Regression"</span>, <span class="st">"Classification Tree (Unweighted)"</span>,</span>
+<span id="cb69-2"><a href="#cb69-2" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"Naive"</span>),</span>
+<span id="cb69-3"><a href="#cb69-3" aria-hidden="true" tabindex="-1"></a>                     <span class="st">`</span><span class="at">Training Accuracy</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"80.14%"</span>,<span class="st">"79.79%"</span>,<span class="st">"73.46%"</span>),</span>
+<span id="cb69-4"><a href="#cb69-4" aria-hidden="true" tabindex="-1"></a>                     <span class="st">`</span><span class="at">Testing Accuracy</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"80.03%"</span>,<span class="st">"78.86%"</span>,<span class="st">"73.46%"</span>),</span>
+<span id="cb69-5"><a href="#cb69-5" aria-hidden="true" tabindex="-1"></a>                    <span class="st">`</span><span class="at">Training Sensitivity</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"67.59%"</span>,<span class="st">"49.16%"</span>,<span class="st">"100.00%"</span>),</span>
+<span id="cb69-6"><a href="#cb69-6" aria-hidden="true" tabindex="-1"></a>                    <span class="st">`</span><span class="at">Testing Sensitivity</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"68.43%"</span>,<span class="st">"47.77%"</span>,<span class="st">"100.00%"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Insert the data frame into a table via the “formattable” package:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="fu">formattable</span>(results, <span class="at">align =</span><span class="fu">c</span>(<span class="st">"c"</span>,<span class="st">"c"</span>,<span class="st">"c"</span>,<span class="st">"c"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+
+<table class="table table-condensed">
+<thead>
+<tr>
+<th style="text-align:center;">
+Model
+</th>
+<th style="text-align:center;">
+Training Accuracy
+</th>
+<th style="text-align:center;">
+Testing Accuracy
+</th>
+<th style="text-align:center;">
+Training Sensitivity
+</th>
+<th style="text-align:center;">
+Testing Sensitivity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center;">
+Logistic Regression
+</td>
+<td style="text-align:center;">
+80.14%
+</td>
+<td style="text-align:center;">
+80.03%
+</td>
+<td style="text-align:center;">
+67.59%
+</td>
+<td style="text-align:center;">
+68.43%
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Classification Tree (Unweighted)
+</td>
+<td style="text-align:center;">
+79.79%
+</td>
+<td style="text-align:center;">
+78.86%
+</td>
+<td style="text-align:center;">
+49.16%
+</td>
+<td style="text-align:center;">
+47.77%
+</td>
+</tr>
+<tr>
+<td style="text-align:center;">
+Naive
+</td>
+<td style="text-align:center;">
+73.46%
+</td>
+<td style="text-align:center;">
+73.46%
+</td>
+<td style="text-align:center;">
+100.00%
+</td>
+<td style="text-align:center;">
+100.00%
+</td>
+</tr>
+</tbody>
+
+</table>
+</div>
+</div>
+<p>We can get fancy :)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define a custom function that colors the maximum value</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>color_max <span class="ot">=</span> <span class="cf">function</span>(x) {</span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>  max_val <span class="ot">&lt;-</span> <span class="fu">max</span>(<span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">"%"</span>, <span class="st">""</span>, x)), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ifelse</span>(<span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">"%"</span>, <span class="st">""</span>, x)) <span class="sc">==</span> max_val, <span class="fu">style</span>(<span class="at">color =</span> <span class="st">"white"</span>, <span class="at">background =</span> <span class="st">"green"</span>), <span class="cn">NA</span>)</span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a formattable table</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a><span class="fu">formattable</span>(results, <span class="fu">list</span>(</span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Training Accuracy</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">formatter</span>(<span class="st">"span"</span>, <span class="at">style =</span> color_max),</span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Testing Accuracy</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">formatter</span>(<span class="st">"span"</span>, <span class="at">style =</span> color_max),</span>
+<span id="cb72-5"><a href="#cb72-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Training Sensitivity</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">formatter</span>(<span class="st">"span"</span>, <span class="at">style =</span> color_max),</span>
+<span id="cb72-6"><a href="#cb72-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">`</span><span class="at">Testing Sensitivity</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">formatter</span>(<span class="st">"span"</span>, <span class="at">style =</span> color_max)</span>
+<span id="cb72-7"><a href="#cb72-7" aria-hidden="true" tabindex="-1"></a>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+
+<table class="table table-condensed">
+<thead>
+<tr>
+<th style="text-align:right;">
+Model
+</th>
+<th style="text-align:right;">
+Training Accuracy
+</th>
+<th style="text-align:right;">
+Testing Accuracy
+</th>
+<th style="text-align:right;">
+Training Sensitivity
+</th>
+<th style="text-align:right;">
+Testing Sensitivity
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:right;">
+Logistic Regression
+</td>
+<td style="text-align:right;">
+<span style="color: white; background: green">80.14%</span>
+</td>
+<td style="text-align:right;">
+<span style="color: white; background: green">80.03%</span>
+</td>
+<td style="text-align:right;">
+<span>67.59% </span>
+</td>
+<td style="text-align:right;">
+<span>68.43% </span>
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+Classification Tree (Unweighted)
+</td>
+<td style="text-align:right;">
+<span>79.79%</span>
+</td>
+<td style="text-align:right;">
+<span>78.86%</span>
+</td>
+<td style="text-align:right;">
+<span>49.16% </span>
+</td>
+<td style="text-align:right;">
+<span>47.77% </span>
+</td>
+</tr>
+<tr>
+<td style="text-align:right;">
+Naive
+</td>
+<td style="text-align:right;">
+<span>73.46%</span>
+</td>
+<td style="text-align:right;">
+<span>73.46%</span>
+</td>
+<td style="text-align:right;">
+<span style="color: white; background: green">100.00%</span>
+</td>
+<td style="text-align:right;">
+<span style="color: white; background: green">100.00%</span>
+</td>
+</tr>
+</tbody>
+
+</table>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
