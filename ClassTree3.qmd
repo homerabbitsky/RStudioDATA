@@ -1,0 +1,321 @@
+## Classification Trees - Part 3
+
+```{r}
+#| include: false 
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+library(rpart) #for classification trees
+library(RColorBrewer) #better visualization of classification trees
+library(rattle) #better visualization of classification trees
+library(caret) #management of model building
+library(tidymodels) #management of model building
+library(formattable) #pretty tables
+library(skimr) 
+```
+
+BIG NOTE: Only build models on the training set!!! Never on the testing set!!!
+
+#### Workflow
+
+Load Data --\> Clean/Prepare --\> Split --\> Visualize (on Training Data) --\> Build Models (on Training Data) --\> Select Best Model(s) --\> Evaluate on Testing Set
+
+#### Data Loading, Cleaning, and Preparation
+
+![DALL-E 3 Image for "Create a flat art style cartoon to illustrate customers"churning" from a company" prompt](churn.png){width="324"}
+
+Load the dataset
+
+```{r}
+churn = read_csv("churn.csv")
+```
+
+This is a new dataset for us, so we need to our clean and prep work.
+
+```{r}
+str(churn)
+summary(churn)
+```
+
+Clean and prep work (as usual)
+
+```{r}
+# factor conversion 
+churn = churn %>% mutate(across(where(is.character), as_factor))
+str(churn)
+skim(churn)
+```
+
+No apparent missingness. Next step is then to split the dataset.
+
+#### Model Validation
+
+```{r}
+set.seed(123) #ensures we all get the same splits
+churn_split = initial_split(churn, prop = 0.7, strata = Churn) #70% in training
+train = training(churn_split) 
+test = testing(churn_split)
+```
+
+#### Visualization
+
+Don't skip this step :) Do your visualization work on the training set.
+
+```{r}
+ggplot(train,aes(x=gender,fill=Churn)) + geom_bar() + theme_bw()
+```
+
+```{r}
+ggplot(train,aes(x=Partner,fill=Churn)) + geom_bar() + theme_bw()
+```
+
+```{r}
+ggplot(train,aes(x=Dependents,fill=Churn)) + geom_bar() + theme_bw()
+```
+
+```{r}
+train %>% tabyl(Dependents, Churn) %>% adorn_percentages("row") 
+```
+
+```{r}
+ggplot(train,aes(x=Churn,y=tenure)) + geom_boxplot() + theme_bw()
+```
+
+```{r}
+ggplot(train,aes(x=PhoneService,fill=Churn)) + geom_bar() + theme_bw()
+train %>% tabyl(PhoneService, Churn) %>% adorn_percentages("row") 
+```
+
+```{r}
+ggplot(train,aes(x=MultipleLines,fill=Churn)) + geom_bar() + theme_bw()
+train %>% tabyl(MultipleLines, Churn) %>% adorn_percentages("row")
+```
+
+```{r}
+ggplot(train,aes(x=InternetService,fill=Churn)) + geom_bar() + theme_bw()
+train %>% tabyl(InternetService, Churn) %>% adorn_percentages("row")
+```
+
+```{r}
+ggplot(train,aes(x=OneMoreService,fill=Churn)) + geom_bar() + theme_bw()
+train %>% tabyl(OneMoreService, Churn) %>% adorn_percentages("row")
+```
+
+```{r}
+ggplot(train,aes(x=Contract,fill=Churn)) + geom_bar() + theme_bw()
+```
+
+```{r}
+ggplot(train,aes(x=PaperlessBilling,fill=Churn)) + geom_bar() + theme_bw()
+train %>% tabyl(PaperlessBilling, Churn) %>% adorn_percentages("row")
+```
+
+```{r}
+ggplot(train,aes(x=PaymentMethod,fill=Churn)) + geom_bar() + theme_bw()
+train %>% tabyl(PaymentMethod, Churn) %>% adorn_percentages("row")
+```
+
+```{r}
+ggplot(train,aes(x=Churn,y=MonthlyCharges)) + geom_boxplot() + theme_bw()
+```
+
+#### Building Classification Trees
+
+Build our classification tree from before (all variables as potential predictors) on the TRAINING set.
+
+```{r}
+tree_model1 = rpart(Churn ~ ., data = train, method = "class")
+```
+
+Plot:
+
+```{r}
+fancyRpartPlot(tree_model1)
+```
+
+Based on this tree, what should the company do to try to prevent customers from churning?
+
+#### Classification Tree Performance
+
+We evaluate model performance on the training set first. Be sure that you have the correct data frame name in your predict and confusionMatrix functions! Also, pay attention to the value for "positive".
+
+```{r}
+treepred_train = predict(tree_model1, train, type = "class")
+```
+
+```{r}
+confusionMatrix(treepred_train,train$Churn,positive="Yes")
+```
+
+How do we feel about the performance of this model?
+
+```{r}
+treepred_test = predict(tree_model1, test, type = "class")
+confusionMatrix(treepred_test,test$Churn,positive="Yes")
+```
+
+On the training set we experienced an accuracy of: **79.79%**. This dropped to **78.86%** on the testing set. We are not overfitting, but what concerns might we have?
+
+------------------------------------------------------------------------
+
+Sensitivity is probably a concern!
+
+```{r}
+weights = ifelse(train$Churn == "Yes", 5, 1)
+
+# Now fit the rpart model
+wt_mod = rpart(Churn ~ ., train, method = "class", weights = weights)
+
+# Plot the tree
+fancyRpartPlot(wt_mod)
+
+```
+
+Based on this tree, what should the company do to try to prevent customers from churning?
+
+Examine the performance of this model:
+
+```{r}
+wttreepred_train = predict(wt_mod, train, type = "class")
+confusionMatrix(wttreepred_train,train$Churn,positive="Yes")
+```
+
+How do we feel about this model?
+
+------------------------------------------------------------------------
+
+For comparison, let's look at a logistic regression model and see how the performance of that model stacks up to our tree.
+
+We'll build our logistic regression model on the training set.
+
+```{r}
+log_model1 = glm(Churn ~., train, family = "binomial")
+summary(log_model1)
+```
+
+Remove the insignificant variables and the MultipleLines variable (it's a perfect linear combination of the Contract, PhoneService, and InternetService variables).
+
+```{r}
+log_model2 = glm(Churn ~.-gender-Partner-Dependents-OneMoreService-MultipleLines, train, family = "binomial")
+summary(log_model2)
+```
+
+Based on this model, what should the company do to try to prevent customers from churning?
+
+Develop predictions on the training set:
+
+```{r}
+logpred_train = predict(log_model2, type = "response")
+```
+
+These are probabilities that we now need to convert to classes (using a probability threshold). We have code (from a previous lecture) to help us find the threshold that this best to maximize accuracy (as before, be careful with names of objects):
+
+```{r}
+pred = prediction(logpred_train, train$Churn)
+perf = performance(pred,"tpr","fpr")
+plot(perf, colorize=TRUE, print.cutoffs.at=seq(0,1,by=0.1), text.adj=c(-0.2,1.7))
+
+# plot accuracy as function of threshold
+acc.perf = performance(pred, measure = "acc")
+plot(acc.perf)
+
+# find best threshold to maximize accuracy
+ind = which.max( slot(acc.perf, "y.values")[[1]] )
+acc = slot(acc.perf, "y.values")[[1]][ind]
+cutoff = slot(acc.perf, "x.values")[[1]][ind]
+print(c(accuracy= acc, cutoff = cutoff))
+```
+
+We get a best cutoff (threshold) of: 0.5445417 to maximize accuracy! We'll use this threshold on the training AND testing sets! Do not build models OR make new thresholds using the testing set data!!
+
+Let's check out (manually, unfortunately for logistic regression) our accuracy on the training set.
+
+```{r}
+table1 = table(logpred_train > 0.5445417, train$Churn)
+table1
+```
+
+Accuracy is then:
+
+```{r}
+(table1[1,1] + table1[2,2])/nrow(train)
+```
+
+Our logistic regression model has an accuracy of **80.14%** on the training set (this is competitive with the accuracy of our classification tree).
+
+We know sensitivity is important for this model, how does our logistic regression model perform?
+
+```{r}
+table1[2,2]/(table1[2,1] + table1[2,2])
+```
+
+Sensitivity is 67.59%. This is better than the sensitivity that we experienced with the classification tree.
+
+Let's see what happens when we check out performance on the testing set. Start by making predictions on the testing set and then develop a confusion matrix (using the same threshold!). DO NOT DEVELOP A NEW MODEL OR THRESHOLD USING THE TESTING DATA!! Be careful to add the "newdata" argument to the predict function!
+
+```{r}
+logpred_test = predict(log_model2, newdata=test, type = "response")
+```
+
+```{r}
+table2 = table(logpred_test > 0.5445417 , test$Churn)
+table2
+```
+
+Accuracy on the testing set is then:
+
+```{r}
+(table2[1,1] + table2[2,2])/nrow(test)
+```
+
+Accuracy drops to **80.03%**.
+
+```{r}
+table2[2,2]/(table2[2,1] + table2[2,2])
+```
+
+Sensitivity is 68.43%.
+
+**What do we do?**
+
+------------------------------------------------------------------------
+
+Let's make a "pretty" table of our results. We'll do this manually. First make a little data frame (actually a "tidyverse" tibble) to hold our content for the table:
+
+```{r}
+results = tibble(Model = c("Logistic Regression", "Classification Tree (Unweighted)",
+                           "Naive"),
+                     `Training Accuracy` = c("80.14%","79.79%","73.46%"),
+                     `Testing Accuracy` = c("80.03%","78.86%","73.46%"),
+                    `Training Sensitivity` = c("67.59%","49.16%","100.00%"),
+                    `Testing Sensitivity` = c("68.43%","47.77%","100.00%"))
+```
+
+Insert the data frame into a table via the "formattable" package:
+
+```{r}
+formattable(results, align =c("c","c","c","c"))
+```
+
+We can get fancy :)
+
+```{r}
+# Define a custom function that colors the maximum value
+color_max = function(x) {
+  max_val <- max(as.numeric(sub("%", "", x)), na.rm = TRUE)
+  ifelse(as.numeric(sub("%", "", x)) == max_val, style(color = "white", background = "green"), NA)
+}
+```
+
+```{r}
+# Create a formattable table
+formattable(results, list(
+  `Training Accuracy` = formatter("span", style = color_max),
+  `Testing Accuracy` = formatter("span", style = color_max),
+  `Training Sensitivity` = formatter("span", style = color_max),
+  `Testing Sensitivity` = formatter("span", style = color_max)
+))
+
+```
