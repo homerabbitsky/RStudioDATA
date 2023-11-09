@@ -1,0 +1,277 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Random Forests - Part 1
+
+```{r}
+#| include: false 
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+library(rpart) #for classification trees
+library(RColorBrewer) #better visualization of classification trees
+library(rattle) #better visualization of classification trees
+library(caret) #management of model building
+library(tidymodels) #management of model building
+library(formattable) #pretty tables
+library(skimr)
+library(randomForest) #for Random Forest models
+```
+
+#### Random Forests
+
+![DALL-E 3 Image. Prompt: Create an image to accompany a lecture on the random forests model for predictive analytics.](rf.png){width="338"}
+
+#### Data Loading, Cleaning, and Preparation
+
+We'll use our "churn" dataset that we have looked at before. Recall that this dataset is trying help us predict whether or not a customer churns (leaves) our service at a telecom company.
+
+Load the dataset
+
+```{r}
+churn = read_csv("churn.csv")
+```
+
+Clean and prep work (as done in previous lecture). Recall that there is no missingness.
+
+```{r}
+# factor conversion  
+churn = churn %>% mutate(across(where(is.character), as_factor)) 
+str(churn)
+```
+
+No apparent missingness. Next step is then to split the dataset.
+
+------------------------------------------------------------------------
+
+#### What is a Random Forest?
+
+As you might guess, a Random Forest is a collection of trees (Classification Trees). The main idea is this: Create many trees that are diverse. Each tree gets a "vote" in the final model. Majority wins.
+
+What do we mean by "diverse" in the context of trees? Trees will not necessarily be unique (we may get duplicates), but we should have enough different trees to able to explain the dataset as well as possible. How does a Random Forest induce diversity in trees? As each tree in the forest in constructed:
+
+-   *Sample the Dataset with Replacement*: Create a sample of the same size as the dataset (typically), but draw the sample with replacement. What does this do?
+
+-   *Sample the Predictor Variables at Each Potential Split in the Tree*: The number of variables in this sample is a parameter of the model (we can modify it).
+
+We end up with some number of trees (typical range 100 to 500). Here's what an ensemble of three trees might look like:
+
+![](trees_forest.png)
+
+How would each tree classify a passenger in 3rd class that is male and embarked at Queenstown?
+
+-   Tree 1?
+
+-   Tree 2?
+
+-   Tree 3?
+
+-   Consensus?
+
+How about a first class male that embarked at Southampton?
+
+#### Why Use a Random Forest?
+
+-   *Reduced risk of overfitting*: Using an "ensemble" of models (trees in this case) reduces likelihood that we will overfit.
+
+-   *Classification trees are unstable*: Here we demonstrate how the tree changes as we change the seed and split size. Let's try a seed of 123 with 70% split, then change the seed to another arbitrary number, 1234. Does the tree change? How about if we do a 60/40 split?
+
+    A Random Forest model is more likely to be stable.
+
+```{r}
+set.seed(123) 
+churn_split = initial_split(churn, prop = 0.7, strata = Churn) 
+train = training(churn_split) 
+test = testing(churn_split)
+
+tree_model1 = rpart(Churn ~ ., data = train, method = "class")
+fancyRpartPlot(tree_model1)
+```
+
+-   *Performance*: In GENERAL a Random Forest model will tend to outperform a Classification Tree model. On small datasets with few variables, there may be little difference in performance (or the tree model might be better).
+
+-   *Helps to Identify Important Variables:* We can easily calculate variable importance for each variable in our model. This can come in handy :)
+
+A few downsides:
+
+-   *Computation Time*: A Random Forest model is more computationally intensive than a Classification Tree.
+
+-   *Interpretation*: A Random Forest model lacks a nice visual output that we can easily interpret.
+
+Let's go build a Random Forest model!
+
+#### Model Validation
+
+```{r}
+set.seed(123) #ensures we all get the same splits
+churn_split = initial_split(churn, prop = 0.7, strata = Churn) #70% in training
+train = training(churn_split) 
+test = testing(churn_split)
+```
+
+#### Visualization
+
+We did our data visualization in the last classification tree lecture. We'll skip for the sake of time.
+
+#### Building Random Forests
+
+Build a random forest with all variables as potential predictors on the TRAINING set. Notice that the code is similar to the lm, glm, and rpart code that we have often used. There is, however, a little bit more going on here:
+
+```{r}
+set.seed(743)
+rf1 = randomForest(Churn ~ ., data = train, 
+                   ntree = 100, mtry = floor(sqrt(ncol(train) - 1)))
+```
+
+"ntree" refers to the number of trees that are built. Typical range: 100-500 as noted before. The "mtry" parameter refers to the number of variables sampled at each tree split. A rule of thumb is that mtry should be the floor of the square root of the number of possible predictors (m):
+
+$$
+\lfloor \sqrt{m} \rfloor
+$$
+
+Unfortunately, there are no fun visuals from a random forest. We can see a variable importance plot (Note that Gini is a measure of purity):
+
+```{r}
+varImpPlot(rf1)
+```
+
+#### Random Forest Performance
+
+We evaluate model performance on the training set first. Be sure that you have the correct data frame name in your predict and confusionMatrix functions! Also, pay attention to the value for "positive".
+
+```{r}
+rfpred_train = predict(rf1, train)
+confusionMatrix(rfpred_train,train$Churn,positive="Yes")
+```
+
+How do we feel about the performance of this model?
+
+```{r}
+rfpred_test = predict(rf1, test)
+confusionMatrix(rfpred_test,test$Churn,positive="Yes")
+```
+
+On the training set we experienced an accuracy of: **89.84%**. This dropped to **79.56%** on the testing set. We are not overfitting, but what concerns might we have?
+
+How about sensitivity?
+
+------------------------------------------------------------------------
+
+Sensitivity is probably a concern! What was our approach with classification trees to force a tree model that was more sensitive?
+
+```{r}
+# Set class weights for the randomForest model
+weights = c(No = 1, Yes = 5)
+
+# Train the model with the specified class weights
+set.seed(734)
+rf_model_wt = randomForest(Churn ~ ., data = train, 
+                           classwt = weights, 
+                           ntree = 100, mtry = floor(sqrt(ncol(train) - 1)))
+
+```
+
+Examine the performance of this model:
+
+```{r}
+rfpredwt_train = predict(rf_model_wt, train)
+confusionMatrix(rfpredwt_train,train$Churn,positive="Yes")
+```
+
+How do we feel about this model?
+
+------------------------------------------------------------------------
+
+#### Tuning
+
+One of the BIG issues with more complex predictive models is **parameter tuning**. Think of parameters as levers and dials that we can adjust to tweak model performance. We won't go too far into this in this course, but we should at least address it. We use the "caret" package to manage the parameter tuning process for us.
+
+Before we proceed, let's talk about the concept of $k$-fold cross-validation. We will perform this on our training set to help us choose the best values for the parameters. For $k$-fold cross-validation we break the training set into $k$ partitions (folds). Typical values for $k$ are 3, 5, and 10. We then build a model on $k-1$ of the folds and evaluate its performance on the remaining fold. We do this for all $k$ folds (see picture below). This gives us $k$ models and we then average their performance.
+
+If we are tuning parameters we would build a total of $k$ models for each parameter combination and then select the best result. If we have lots of parameters and parameter values this can get out of hand quickly!!
+
+![](grid_search_cross_validation.png){width="405"}
+
+Let's look at the code to tune parameters with $k=5$. This code may take a moment to run!
+
+```{r}
+# Set up control for training with cross-validation
+control = trainControl(method="cv", number=5, search="grid")
+
+# Define the tuning grid
+tuneGrid = expand.grid(
+  .mtry = c(1, 2, floor(sqrt(ncol(train))), ncol(train)/2) #3 values of mtry
+)
+
+# Train the model with tuning
+set.seed(123) #needed to make sure we all get the same folds
+rf_tune = train(Churn ~ ., data=train, method="rf", metric="Accuracy", tuneGrid=tuneGrid, trControl=control)
+
+```
+
+In this code "nodesize" refers to the minimum amount of observations we have to have in a "terminal" node in a tree. Larger values will likely reduce overfitting, but the default value is 1.
+
+```{r}
+print(rf_tune)
+```
+
+Tuned predictions (training):
+
+```{r}
+rfpredtune_train = predict(rf_tune, train)
+confusionMatrix(rfpredtune_train,train$Churn,positive="Yes")
+```
+
+Testing:
+
+```{r}
+rfpredtune_test = predict(rf_tune, test)
+confusionMatrix(rfpredtune_test,test$Churn,positive="Yes")
+```
+
+Our training accuracy is 81.64% with a sensitivity of 45.8% and the testing accuracy is 79.75% with a sensitivity of 41.18%.
+
+------------------------------------------------------------------------
+
+Let's make a "pretty" table of our results. We'll do this manually. First make a little data frame (actually a "tidyverse" tibble) to hold our content for the table:
+
+```{r}
+results = tibble(Model = c("Logistic Regression", "Classification Tree (Unweighted)",
+                           "Random Forest (Tuned)", "Naive"),
+                     `Training Accuracy` = c("80.14%","79.79%","81.64", "73.46%"),
+                     `Testing Accuracy` = c("80.03%","78.86%","79.75%", "73.46%"),
+                    `Training Sensitivity` = c("67.59%","49.16%","45.80%", "100.00%"),
+                    `Testing Sensitivity` = c("68.43%","47.77%","41.18", "100.00%"))
+```
+
+Insert the data frame into a table via the "formattable" package:
+
+```{r}
+formattable(results, align =c("c","c","c","c"))
+```
+
+We can get fancy :)
+
+```{r}
+# Define a custom function that colors the maximum value
+color_max = function(x) {
+  max_val <- max(as.numeric(sub("%", "", x)), na.rm = TRUE)
+  ifelse(as.numeric(sub("%", "", x)) == max_val, style(color = "white", background = "green"), NA)
+}
+```
+
+```{r}
+# Create a formattable table
+formattable(results, list(
+  `Training Accuracy` = formatter("span", style = color_max),
+  `Testing Accuracy` = formatter("span", style = color_max),
+  `Training Sensitivity` = formatter("span", style = color_max),
+  `Testing Sensitivity` = formatter("span", style = color_max)
+))
+
+```
