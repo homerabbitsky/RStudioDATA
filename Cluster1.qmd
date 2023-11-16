@@ -1,0 +1,222 @@
+---
+format:
+  html:
+    embed-resources: true
+---
+
+## Clustering - Part 1
+
+```{r}
+#| include: false 
+library(titanic)
+library(tidyverse)
+library(janitor)
+library(mice)
+library(ROCR)
+library(rpart) #for classification trees
+library(RColorBrewer) #better visualization of classification trees
+library(rattle) #better visualization of classification trees
+library(caret) #management of model building
+library(tidymodels) #management of model building
+library(formattable) #pretty tables
+library(skimr)
+library(randomForest) #for Random Forest models
+library(cluster) #algorithms for clustering
+library(factoextra) #visualization
+```
+
+#### Clustering
+
+![](cluster.png){width="236"}
+
+Today, we'll look at the k-means clustering algorithm. This approach is an **unsupervised** predictive analytics technique. The other techniques that we have looked at (linear regression, classification trees, etc.) have all been **supervised** techniques.
+
+K-means is considered an unsupervised learning method due to its approach in dealing with data:
+
+1.  **No Predefined Labels**: In unsupervised learning, the data does not come with predefined labels or outcomes. The goal is to explore the structure of the data to find patterns. K-means does this by identifying clusters in the data without any prior knowledge of what these clusters should be.
+
+2.  **Discovery of Hidden Patterns**: K-means algorithm discovers the inherent groupings in the data. It does this by partitioning the dataset into k distinct, non-overlapping subgroups (clusters) based on similarities among data points, without any external guidance or training data.
+
+3.  **Iterative Approach**: K-means iteratively assigns data points to clusters based on the nearest mean (centroid) and then recalculates the centroids until the clusters stabilize. This process does not require any external supervision.
+
+4.  **Generalization**: Unlike supervised learning methods, k-means does not make predictions or generalize from training data to unseen data. Instead, it's about understanding and interpreting the structure and distribution of the data.
+
+Here's how the k-means algorithm works:
+
+1.  **Initialization**: Start by selecting 'k' initial centroids randomly, where 'k' is the number of clusters you want to identify.
+
+2.  **Assignment**: Assign each data point to the nearest centroid, forming 'k' clusters. The proximity is usually determined by the Euclidean distance between a data point and the centroid.
+
+3.  **Update Centroids**: Once all points are assigned, recalculate the centroids of each cluster as the mean of all points in that cluster.
+
+4.  **Iterate**: Repeat the assignment and centroid updating steps iteratively until the centroids no longer change significantly, indicating that the clusters are relatively stable and the algorithm has converged.
+
+5.  **Result**: The result is a set of 'k' clusters, each represented by a centroid, with the data points in each cluster being closer to their own centroid than to others.
+
+Here's a small example of k-means with k = 2. In figure (a) we have our original dataset. In figure (b) we set-up two random centroids (because k = 2). In figure (c) we assign each point to its nearest centroid. In figure (d) calculate new cluster centroids and in (e) assign points to nearest centroid. In (f) calculate new centroids. Repeat for a set number of iterations or until the clusters are stable.
+
+![](kmeansViz.png){width="678"}
+
+Applications of k-means clustering could include:
+
+1.  **Customer Segmentation**: In marketing, k-means can be used to segment customers into distinct groups based on purchasing behavior, preferences, demographics, etc. This helps businesses tailor marketing strategies and personalize services.
+
+2.  **Image Segmentation**: In image processing, k-means is used for segmenting digital images into different regions, helping in object recognition, compression, or enhancing specific features of the image.
+
+3.  **Anomaly Detection**: By clustering data, k-means can help identify outliers or anomalies in datasets, such as fraudulent activities in banking transactions or faults in manufacturing processes.
+
+4.  **Spatial Data Analysis**: In geography or urban planning, k-means can cluster spatial data to identify areas with similar characteristics, which is useful in land-use planning, resource allocation, or traffic management.
+
+------------------------------------------------------------------------
+
+#### Example 1: Data Loading, Cleaning, and Preparation
+
+![](dogs_cats.png){width="380"}
+
+```{r}
+dog_cat = read_csv("dog_cat.csv")
+```
+
+```{r}
+ggplot(dog_cat,aes(x=Weight,y=Height)) + geom_point() + theme_bw()
+```
+
+```{r}
+ggplot(dog_cat,aes(x=Weight,y=Height,color=Label)) + 
+  geom_point() + theme_bw()
+```
+
+We ONLY cluster numeric data with k-means.
+
+```{r}
+dog_cat_scaled = dog_cat %>% select(-Label) %>% scale(.)
+summary(dog_cat_scaled)
+```
+
+We can plot the scaled data. As a technical note, the dog_cat_scaled data is now a matrix rather than a dataframe. Because of this, we need to, on the fly, convert the matrix to a dataframe in the ggplot function.
+
+```{r}
+ggplot(data.frame(dog_cat_scaled),aes(x=Weight,y=Height)) + geom_point() +
+  theme_bw()
+```
+
+Now we cluster:
+
+```{r}
+set.seed(1234) # so we all get the same clusters
+dog_cat_clust = kmeans(dog_cat_scaled, 2) # create 2 clusters
+dog_cat_clust
+```
+
+We can now go back and assign the cluster to the original data.
+
+```{r}
+dog_cat = dog_cat %>% mutate(cluster = dog_cat_clust$cluster)
+```
+
+Now we can plot and see the clusters:
+
+```{r}
+ggplot(dog_cat,aes(x=Weight,y=Height,color=cluster)) + geom_point() +
+  theme_bw()
+```
+
+------------------------------------------------------------------------
+
+#### Example 2: Data Loading, Cleaning, and Preparation
+
+For our next example, we'll use a university/college admissions dataset. Load the dataset
+
+```{r}
+college = read_csv("College_Data.csv")
+```
+
+```{r}
+str(college)
+skim(college)
+```
+
+Clean and prep work. Note that there is no missingness.
+
+```{r}
+# rename the first variable
+college = college %>% rename(Name = `...1`)
+
+# factor conversion  
+college = college %>% mutate(Private = as_factor(Private)) 
+
+# check out the structure
+str(college)
+```
+
+Next we scale the numeric values in the dataset. Note that we will use k-Means clustering ONLY on numeric variables!
+
+```{r}
+college_scaled = college %>% select(-Name, -Private) %>%
+  scale(.)
+summary(college_scaled)
+```
+
+We don't, typically, need to do any data splitting so we'll just do our clustering work on the full (scaled) dataset.
+
+------------------------------------------------------------------------
+
+#### Clustering with k-Means
+
+Next, we perform k-means clustering with a pre-specified number of clusters. I selected 2 clusters. Note that k-means uses randomness, so we need to use set.seed to ensure same clusters.
+
+```{r}
+set.seed(1234) # so we all get the same clusters
+clusters1 = kmeans(college_scaled, 2) # create 2 clusters
+clusters1 #don't do this for very large datasets as the cluster for each row is shown
+```
+
+Here we (somewhat arbitrarily) selected k = 2. How can we find the "optimal" number of clusters for our dataset?
+
+There are a couple of approaches to selecting the "optimal" k value. The first is a visual approach. We look at a plot of the number of clusters (on the x-axis) and the total squared distance from each point to the center of its cluster (on the y-axis). In this plot we are looking for the point where the curve "bends". This is a bit subjective.
+
+```{r}
+set.seed(123)
+fviz_nbclust(college_scaled, kmeans, method = "wss") #minimize within-cluster variation
+```
+
+We select either k = 3 or k = 4 in this case.
+
+Alternatively, we can use the "silhouette" approach. This approach measures how similar an observation is to its cluster. A higher mean silhouette is better!
+
+```{r}
+set.seed(123)
+fviz_nbclust(college_scaled, kmeans, method = "silhouette") #maximize how well points sit in their clusters
+```
+
+It looks like k = 3 is optimal. So let's go ahead and build our model with k = 3.
+
+```{r}
+set.seed(1234)
+clusters2 = kmeans(college_scaled, 3)
+clusters2 
+```
+
+#### Analysis of Cluster Results
+
+Great, we have clusters! Now what?
+
+Let's attach the cluster assignment back to the original (unscaled) dataset.
+
+```{r}
+college = college %>% mutate(cluster = clusters2$cluster)
+```
+
+Examine the schools in each cluster. We can make some generalizations about the different clusters based on this basic examination.
+
+```{r}
+college %>% filter(cluster == 1)
+college %>% filter(cluster == 2)
+college %>% filter(cluster == 3)
+```
+
+How are private versus public schools distributed through the clusters?
+
+```{r}
+table(college$Private,college$cluster)
+```
